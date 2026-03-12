@@ -18,6 +18,7 @@ const COLORS = {
   collectible: '#d8b830',
   collectibleGlow: '#b89828',
   gridLine: '#3a4558',
+  moveHighlight: '#d87890',
 }
 
 export function createCanvas() {
@@ -136,12 +137,25 @@ function drawCollectible(ctx, x, y, size) {
   ctx.fill()
 }
 
-export function render(canvas, state) {
+function drawMoveHighlight(ctx, x, y, size) {
+  const cx = x + size / 2
+  const cy = y + size / 2
+  ctx.fillStyle = COLORS.moveHighlight
+  ctx.beginPath()
+  ctx.arc(cx, cy, 5, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+export function render(canvas, state, options = {}) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   const w = canvas.width
   const h = canvas.height
   ctx.clearRect(0, 0, w, h)
+
+  const highlightSet = options.highlightCells
+    ? new Set(options.highlightCells.map((c) => `${c.row},${c.col}`))
+    : null
 
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
@@ -159,6 +173,10 @@ export function render(canvas, state) {
       else if (cell.entity === 'enemy') drawEnemy(ctx, x, y, CELL_SIZE)
       else if (cell.entity === 'exit') drawExit(ctx, x, y, CELL_SIZE)
       else if (cell.entity === 'collectible') drawCollectible(ctx, x, y, CELL_SIZE)
+
+      if (highlightSet && highlightSet.has(`${row},${col}`)) {
+        drawMoveHighlight(ctx, x, y, CELL_SIZE)
+      }
     }
   }
 

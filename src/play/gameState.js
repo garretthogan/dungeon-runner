@@ -75,10 +75,15 @@ function getEnemyAt(row, col) {
 export function movePlayer(fromRow, fromCol, toRow, toCol) {
   const grid = playState.getState()
   const cell = grid[toRow]?.[toCol]
-  if (!cell || cell.base !== 'movement' || cell.entity != null) return false
+  if (!cell || cell.base !== 'movement') return false
+  if (cell.entity != null && cell.entity !== 'exit') return false
   playState.setCell(fromRow, fromCol, { entity: null })
   playState.setCell(toRow, toCol, { entity: 'player' })
   return true
+}
+
+export function damagePlayer(amount) {
+  playerHealth = Math.max(0, playerHealth - amount)
 }
 
 export function moveEnemy(fromRow, fromCol, toRow, toCol) {

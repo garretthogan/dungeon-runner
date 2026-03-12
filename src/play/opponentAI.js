@@ -31,7 +31,6 @@ export function runOpponentTurn() {
 
   let { row: er, col: ec } = enemy
   const { row: pr, col: pc } = playerPos
-  const playerHealth = gameState.getPlayerHealth()
 
   while (gameState.getActionPoints() > 0) {
     const adjacent = gameState.isAdjacent(er, ec, pr, pc)
@@ -47,11 +46,12 @@ export function runOpponentTurn() {
       enemy.col = ec
       continue
     }
-    if (enemy.health < playerHealth) {
+    if (enemy.health < gameState.getPlayerHealth()) {
       gameState.healEnemy(er, ec, 1)
       gameState.spendPoints(1)
     } else {
-      break
+      gameState.damagePlayer(1)
+      gameState.spendPoints(1)
     }
   }
 

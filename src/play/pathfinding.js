@@ -32,9 +32,7 @@ export function getNextStepToward(grid, fromRow, fromCol, toRow, toCol) {
         key = parent.get(key) ?? null
       }
       if (path.length >= 2) {
-        const next = { row: path[1][0], col: path[1][1] }
-        if (next.row === toRow && next.col === toCol) return null
-        return next
+        return { row: path[1][0], col: path[1][1] }
       }
       return null
     }
@@ -55,4 +53,37 @@ export function getNextStepToward(grid, fromRow, fromCol, toRow, toCol) {
     }
   }
   return null
+}
+
+/**
+ * All cells reachable from (fromRow, fromCol) in at most maxSteps steps.
+ * Only movement tiles; cell must be empty or exit (can step onto exit).
+ * Does not include the starting cell.
+ */
+export function getReachableCells(grid, fromRow, fromCol, maxSteps) {
+  if (maxSteps < 1) return []
+  const result = []
+  const visited = new Set()
+  const queue = [[fromRow, fromCol, 0]]
+  visited.add(`${fromRow},${fromCol}`)
+
+  while (queue.length > 0) {
+    const [r, c, steps] = queue.shift()
+    const nextSteps = steps + 1
+    if (nextSteps > maxSteps) continue
+    for (const [dr, dc] of DIRS) {
+      const nr = r + dr
+      const nc = c + dc
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue
+      const cell = grid[nr]?.[nc]
+      if (cell?.base !== 'movement') continue
+      if (cell.entity != null && cell.entity !== 'exit') continue
+      const k = `${nr},${nc}`
+      if (visited.has(k)) continue
+      visited.add(k)
+      result.push({ row: nr, col: nc })
+      queue.push([nr, nc, nextSteps])
+    }
+  }
+  return result
 }

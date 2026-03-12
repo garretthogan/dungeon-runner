@@ -3,6 +3,7 @@ import * as gameState from '../play/gameState.js'
 import * as grid from '../editor/grid.js'
 import { CELL_SIZE } from '../editor/grid.js'
 import { runOpponentTurn } from '../play/opponentAI.js'
+import { getReachableCells, getNextStepToward } from '../play/pathfinding.js'
 
 const DAMAGE_INDICATOR_MS = 1200
 
@@ -63,7 +64,25 @@ export function renderPlay(navigate) {
   canvasWrap.appendChild(canvas)
 
   function renderCanvas() {
-    grid.render(canvas, playState.getState())
+    const state = playState.getState()
+    let highlightCells = []
+    if (
+      gameActive &&
+      gameState.getTurn() === 'player' &&
+      clickMode === 'move' &&
+      gameState.getActionPoints() >= 1
+    ) {
+      const playerPos = gameState.getPlayerPosition()
+      if (playerPos) {
+        highlightCells = getReachableCells(
+          state,
+          playerPos.row,
+          playerPos.col,
+          gameState.getActionPoints()
+        )
+      }
+    }
+    grid.render(canvas, state, { highlightCells })
   }
 
   function showDamageIndicator(row, col, remaining, maxHealth) {
@@ -130,6 +149,11 @@ export function renderPlay(navigate) {
       btnAttack.disabled = ap < 1
       btnDefend.disabled = ap < 1
       btnEnd.disabled = ap !== 0
+      if (ap === 0) {
+        clickMode = null
+        root.querySelector('#play-btn-move')?.classList.remove('active')
+        root.querySelector('#play-btn-attack')?.classList.remove('active')
+      }
     }
   }
 
@@ -153,17 +177,40 @@ export function renderPlay(navigate) {
     if (!cell) return
 
     if (clickMode === 'move') {
-      if (!gameState.isAdjacent(playerPos.row, playerPos.col, row, col)) return
-      if (cell.base !== 'movement' || cell.entity != null) return
+      const ap = gameState.getActionPoints()
+      if (ap < 1) return
+      const reachable = getReachableCells(
+        gridData,
+        playerPos.row,
+        playerPos.col,
+        ap
+      )
+      const isReachable = reachable.some((c) => c.row === row && c.col === col)
+      if (!isReachable) return
+      const next = getNextStepToward(
+        gridData,
+        playerPos.row,
+        playerPos.col,
+        row,
+        col
+      )
+      if (!next) return
       if (!gameState.spendPoints(1)) return
-      gameState.movePlayer(playerPos.row, playerPos.col, row, col)
-      clickMode = null
+      const destCell = gridData[next.row]?.[next.col]
+      const movedToExit = destCell?.entity === 'exit'
+      gameState.movePlayer(playerPos.row, playerPos.col, next.row, next.col)
       updateUI()
       renderCanvas()
+      if (movedToExit) {
+        gameActive = false
+        updateUI()
+        alert('You win!')
+      }
       return
     }
 
     if (clickMode === 'attack') {
+      if (gameState.getActionPoints() < 1) return
       if (!gameState.isAdjacent(playerPos.row, playerPos.col, row, col)) return
       if (cell.entity !== 'enemy') return
       const enemy = gameState.getEnemies().find((e) => e.row === row && e.col === col)
@@ -173,7 +220,6 @@ export function renderPlay(navigate) {
       gameState.damageEnemy(row, col, 1)
       const remaining = Math.max(0, healthBefore - 1)
       showDamageIndicator(row, col, remaining, maxHp)
-      clickMode = null
       updateUI()
       renderCanvas()
     }
@@ -188,11 +234,13 @@ export function renderPlay(navigate) {
     clickMode = clickMode === 'move' ? null : 'move'
     root.querySelector('#play-btn-move').classList.toggle('active', clickMode === 'move')
     root.querySelector('#play-btn-attack').classList.toggle('active', clickMode === 'attack')
+    renderCanvas()
   })
   root.querySelector('#play-btn-attack').addEventListener('click', () => {
     clickMode = clickMode === 'attack' ? null : 'attack'
     root.querySelector('#play-btn-attack').classList.toggle('active', clickMode === 'attack')
     root.querySelector('#play-btn-move').classList.toggle('active', clickMode === 'move')
+    renderCanvas()
   })
   root.querySelector('#play-btn-defend').addEventListener('click', () => {
     if (gameState.getTurn() !== 'player' || gameState.getActionPoints() < 1) return
@@ -219,6 +267,11 @@ export function renderPlay(navigate) {
       setTimeout(() => {
         updateUI()
         renderCanvas()
+        if (gameState.getPlayerHealth() <= 0) {
+          gameActive = false
+          updateUI()
+          alert('You lose!')
+        }
       }, remaining)
     }, 100)
   })
