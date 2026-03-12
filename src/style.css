@@ -23,12 +23,16 @@ a:hover {
   color: #9ac0e8;
 }
 
+html {
+  overflow-x: hidden;
+}
 body {
   margin: 0;
   display: flex;
   place-items: center;
-  min-width: 320px;
+  min-width: 280px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 h1 {
@@ -38,10 +42,17 @@ h1 {
 
 #app {
   max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
   min-height: 100vh;
+  box-sizing: border-box;
+}
+@media (min-width: 480px) {
+  #app {
+    padding: 2rem;
+  }
 }
 
 .logo {
@@ -88,7 +99,14 @@ button:focus-visible {
 
 /* --- Views --- */
 .view-home {
-  padding: 2rem;
+  padding: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (min-width: 480px) {
+  .view-home {
+    padding: 2rem;
+  }
 }
 .view-home h1 {
   margin-top: 0;
@@ -122,10 +140,17 @@ button:focus-visible {
 
 /* --- Editor (mockup: dark blue-grey top bar, status bar under tools) --- */
 .view-editor {
-  padding: 1rem;
+  padding: 0.5rem;
   max-width: 600px;
+  width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
   background-color: #151c28;
+}
+@media (min-width: 480px) {
+  .view-editor {
+    padding: 1rem;
+  }
 }
 .editor-header {
   display: flex;
@@ -206,7 +231,9 @@ button:focus-visible {
 .canvas-wrap {
   display: flex;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.5rem;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #1e2738;
   border-radius: 10px;
   border: 1px solid #2a3548;
@@ -214,17 +241,33 @@ button:focus-visible {
 }
 .puzzle-canvas {
   display: block;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
   border-radius: 6px;
   cursor: crosshair;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  vertical-align: top;
+}
+@media (min-width: 480px) {
+  .canvas-wrap {
+    padding: 1rem;
+  }
 }
 
 /* --- Play (mockup: header, puzzle stage, status bar, action cards) --- */
 .view-play {
-  padding: 1rem;
+  padding: 0.5rem;
   max-width: 420px;
+  width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
   background-color: #151c28;
+}
+@media (min-width: 480px) {
+  .view-play {
+    padding: 1rem;
+  }
 }
 .play-header {
   display: flex;
@@ -265,9 +308,16 @@ button:focus-visible {
   background-color: #1e2738;
   border-radius: 10px;
   border: 1px solid #2a3548;
-  padding: 1rem;
+  padding: 0.5rem;
   margin-bottom: 1rem;
   position: relative;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (min-width: 480px) {
+  .play-stage-wrap {
+    padding: 1rem;
+  }
 }
 .play-opponent-overlay {
   position: absolute;
@@ -309,10 +359,15 @@ button:focus-visible {
 .play-canvas-wrap {
   position: relative;
   margin-bottom: 0.75rem;
-  padding: 0.5rem;
+  padding: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background-color: #252f42;
   border-radius: 8px;
   border: 1px solid #2a3548;
+}
+.play-canvas-wrap .puzzle-canvas {
+  border-radius: 6px 6px 0 0;
 }
 .play-damage-indicator {
   position: absolute;

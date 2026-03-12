@@ -72,10 +72,9 @@ export function renderPlay(navigate) {
     const el = document.createElement('div')
     el.className = 'play-damage-indicator'
     el.textContent = `${remaining}/${maxHealth}`
-    const left = col * CELL_SIZE + CELL_SIZE / 2
-    const top = row * CELL_SIZE - 6
-    el.style.left = `${left}px`
-    el.style.top = `${top}px`
+    const gridPx = 8 * CELL_SIZE
+    el.style.left = `${((col + 0.5) / 8) * 100}%`
+    el.style.top = `${((row * CELL_SIZE - 6) / gridPx) * 100}%`
     wrap.appendChild(el)
     setTimeout(() => {
       el.classList.add('play-damage-indicator-fade')
