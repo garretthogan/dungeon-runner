@@ -4,10 +4,21 @@ import { renderPlay } from './views/play.js'
 
 const ROUTES = ['/', '/editor', '/play']
 
+const BASE = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/'
+const BASE_PREFIX = BASE === '/' ? '' : BASE.replace(/\/$/, '')
+
 function getPath() {
-  let path = location.pathname.replace(/\/$/, '') || '/'
+  let path = location.pathname
+  if (BASE_PREFIX && path.startsWith(BASE_PREFIX)) {
+    path = path.slice(BASE_PREFIX.length) || '/'
+  }
+  path = path.replace(/\/$/, '') || '/'
   if (!ROUTES.includes(path)) path = '/'
   return path
+}
+
+function fullPath(path) {
+  return BASE_PREFIX + (path === '/' ? '' : path)
 }
 
 function render(path) {
@@ -28,7 +39,8 @@ function render(path) {
 
 export function navigate(path) {
   const normalized = path === '' || path === '/' ? '/' : path.replace(/\/$/, '')
-  history.pushState({ path: normalized }, '', normalized)
+  const url = fullPath(normalized)
+  history.pushState({ path: normalized }, '', url)
   render(normalized)
 }
 

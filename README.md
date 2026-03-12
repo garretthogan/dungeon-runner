@@ -20,6 +20,16 @@ npm run build
 npm run preview
 ```
 
+### Deploying to GitHub Pages
+
+The repo is set up to deploy to GitHub Pages via GitHub Actions.
+
+1. In your GitHub repo, go to **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+3. Push to the `main` branch (or run the workflow manually from the **Actions** tab). The workflow builds the app and deploys it to Pages.
+
+The app will be available at `https://<username>.github.io/<repo-name>/`. Routes (`/editor`, `/play`) work correctly with the base path.
+
 ---
 
 ## Routes
