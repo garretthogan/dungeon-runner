@@ -47,23 +47,18 @@ export function findEnemies() {
 
 /** Load level from parsed JSON (same format as editor export). Returns true if valid. */
 export function loadFromJson(data) {
-  const rows = data?.dimensions?.rows ?? data?.grid?.length
-  const cols = data?.dimensions?.cols ?? data?.grid?.[0]?.length
-  const gridData = data?.grid
-  const r = Number(rows) || ROWS
-  const c = Number(cols) || COLS
-  if (r !== ROWS || c !== COLS) return false
-  if (!Array.isArray(gridData) || gridData.length !== r) return false
-  for (let i = 0; i < r; i++) {
-    if (!Array.isArray(gridData[i]) || gridData[i].length !== c) return false
-    for (let j = 0; j < c; j++) {
+  if (!data || typeof data !== 'object') return false
+  const gridData = data.grid ?? (Array.isArray(data) ? data : null)
+  if (!Array.isArray(gridData) || gridData.length !== ROWS) return false
+  const row0 = gridData[0]
+  if (!Array.isArray(row0) || row0.length !== COLS) return false
+  for (let i = 0; i < ROWS; i++) {
+    if (!Array.isArray(gridData[i]) || gridData[i].length !== COLS) return false
+    for (let j = 0; j < COLS; j++) {
       const cell = gridData[i][j]
-      const base = cell?.base === 'obstacle' ? 'obstacle' : 'movement'
+      const base = cell && cell.base === 'obstacle' ? 'obstacle' : 'movement'
       const entity =
-        cell?.entity === 'player' ||
-        cell?.entity === 'enemy' ||
-        cell?.entity === 'exit' ||
-        cell?.entity === 'collectible'
+        cell && (cell.entity === 'player' || cell.entity === 'enemy' || cell.entity === 'exit' || cell.entity === 'collectible')
           ? cell.entity
           : null
       grid[i][j] = { base, entity }

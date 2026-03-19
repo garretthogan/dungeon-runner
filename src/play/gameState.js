@@ -64,6 +64,11 @@ export function spendPoints(n) {
   return true
 }
 
+export function addActionPoints(n) {
+  if (n <= 0) return
+  actionPoints += n
+}
+
 export function getPlayerPosition() {
   return playState.findEntity('player')
 }
@@ -76,7 +81,7 @@ export function movePlayer(fromRow, fromCol, toRow, toCol) {
   const grid = playState.getState()
   const cell = grid[toRow]?.[toCol]
   if (!cell || cell.base !== 'movement') return false
-  if (cell.entity != null && cell.entity !== 'exit') return false
+  if (cell.entity != null && cell.entity !== 'exit' && cell.entity !== 'collectible') return false
   playState.setCell(fromRow, fromCol, { entity: null })
   playState.setCell(toRow, toCol, { entity: 'player' })
   return true
@@ -128,7 +133,8 @@ export function endPlayerTurn() {
 
 export function endOpponentTurn() {
   turn = 'player'
-  rollDice()
+  diceRoll = 0
+  actionPoints = 0
 }
 
 export function isAdjacent(r1, c1, r2, c2) {

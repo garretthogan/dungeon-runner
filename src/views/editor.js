@@ -18,8 +18,14 @@ export function renderEditor(navigate) {
 
   root.innerHTML = `
     <header class="editor-header">
-      <a href="/" class="nav-link back-link" data-path="/">← Back</a>
-      <h1 class="editor-title">DUNGEON RUNNER</h1>
+      <div class="editor-header-spacer"></div>
+      <h1 class="editor-title"><img src="/DR-Logo.png" alt="Dungeon Runner" class="app-logo" /></h1>
+      <div class="editor-settings-wrap">
+        <button type="button" class="play-gear editor-gear" aria-label="Settings" aria-expanded="false" aria-haspopup="menu" id="editor-gear"><img src="/settings-icon.png" alt="" class="play-gear-icon" aria-hidden="true" /></button>
+        <div class="play-settings-menu editor-settings-menu" id="editor-settings-menu" role="menu" hidden>
+          <a href="/" class="play-settings-menu-item nav-link" data-path="/" role="menuitem">← Back</a>
+        </div>
+      </div>
     </header>
     <div class="tool-palette" role="toolbar">
       ${TOOLS.map(
@@ -37,7 +43,23 @@ export function renderEditor(navigate) {
     <div class="canvas-wrap"></div>
   `
 
-  const backLink = root.querySelector('[data-path="/"]')
+  const gearBtn = root.querySelector('#editor-gear')
+  const settingsMenu = root.querySelector('#editor-settings-menu')
+  const backLink = root.querySelector('.play-settings-menu-item[data-path="/"]')
+  if (gearBtn && settingsMenu) {
+    gearBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const open = settingsMenu.hidden
+      settingsMenu.hidden = !open
+      gearBtn.setAttribute('aria-expanded', open)
+    })
+    document.addEventListener('click', (e) => {
+      if (!settingsMenu.hidden && !gearBtn.contains(e.target) && !settingsMenu.contains(e.target)) {
+        settingsMenu.hidden = true
+        gearBtn.setAttribute('aria-expanded', 'false')
+      }
+    })
+  }
   if (backLink) {
     backLink.addEventListener('click', (e) => {
       e.preventDefault()

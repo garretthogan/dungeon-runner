@@ -1,24 +1,24 @@
 const COLS = 8
 const ROWS = 8
 export const CELL_SIZE = 48
-const CELL_RADIUS = 4
+const CELL_RADIUS = 0
 
-/* Mockup palette: light blue-grey movement tiles with subtle dotted texture */
+/* Palette: dark 06265F, second lightest blue 42588B, lightest 8ABFFF, enemy FF92AC, player/exit 8EFDB0, collectible CE8FFF */
 const COLORS = {
-  movement: '#6a7c92',
-  movementHighlight: '#7a8ca2',
-  movementShadow: '#5a6a7e',
-  movementDots: 'rgba(255, 255, 255, 0.4)',
-  obstacle: '#2d3546',
-  player: '#b0d038',
-  playerGlow: '#90b020',
-  enemy: '#b83840',
-  exitBg: '#6a7c92',
-  exitText: '#ffffff',
-  collectible: '#d8b830',
-  collectibleGlow: '#b89828',
-  gridLine: '#3a4558',
-  moveHighlight: '#d87890',
+  movement: '#42588B',
+  movementHighlight: '#8ABFFF',
+  movementShadow: '#06265F',
+  movementDots: 'rgba(138, 191, 255, 0.4)',
+  obstacle: '#06265F',
+  player: '#8EFDB0',
+  playerGlow: '#6ed990',
+  enemy: '#FF92AC',
+  exitBg: '#8EFDB0',
+  exitText: '#06265F',
+  collectible: '#CE8FFF',
+  collectibleGlow: '#b87aff',
+  gridLine: '#06265F',
+  moveHighlight: '#8EFDB0',
 }
 
 export function createCanvas() {
@@ -51,25 +51,10 @@ function drawMovementTile(ctx, x, y, size) {
   const sy = y + 0.5
   const sw = size - 1
   const sh = size - 1
-
-  const gradient = ctx.createLinearGradient(x, y, x, y + size)
-  gradient.addColorStop(0, COLORS.movementHighlight)
-  gradient.addColorStop(0.4, COLORS.movement)
-  gradient.addColorStop(1, COLORS.movementShadow)
   ctx.beginPath()
   roundRect(ctx, sx, sy, sw, sh, r)
-  ctx.fillStyle = gradient
+  ctx.fillStyle = COLORS.movement
   ctx.fill()
-
-  ctx.fillStyle = COLORS.movementDots
-  const step = size / 5
-  for (let i = 0; i < 5; i++) {
-    for (let j = 0; j < 5; j++) {
-      ctx.beginPath()
-      ctx.arc(x + step * (i + 0.5), y + step * (j + 0.5), 1, 0, Math.PI * 2)
-      ctx.fill()
-    }
-  }
 }
 
 function drawObstacle(ctx, x, y, size) {
@@ -98,7 +83,7 @@ function drawEnemy(ctx, x, y, size) {
   const r = size / 3.2
   ctx.fillStyle = COLORS.enemy
   ctx.beginPath()
-  ctx.ellipse(cx, cy + 2, r * 1.05, r * 0.9, 0, 0, Math.PI * 2)
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.fill()
 }
 
@@ -140,10 +125,14 @@ function drawCollectible(ctx, x, y, size) {
 function drawMoveHighlight(ctx, x, y, size) {
   const cx = x + size / 2
   const cy = y + size / 2
+  const r = 10
   ctx.fillStyle = COLORS.moveHighlight
+  ctx.strokeStyle = COLORS.gridLine
+  ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.arc(cx, cy, 5, 0, Math.PI * 2)
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.fill()
+  ctx.stroke()
 }
 
 export function render(canvas, state, options = {}) {

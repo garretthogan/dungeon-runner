@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 38.31 55.22">
+  <defs>
+    <style>
+      .energy-outline {
+        fill: none;
+        stroke: #8abfff;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2px;
+      }
+    </style>
+  </defs>
+  <polygon class="energy-outline" points="19.86 1 1 34.1 17.19 34.1 17.19 54.22 37.31 23.93 19.86 23.93 19.86 1 19.86 1"/>
+</svg>

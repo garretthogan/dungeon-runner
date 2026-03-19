@@ -10,46 +10,83 @@ const DAMAGE_INDICATOR_MS = 1200
 export function renderPlay(navigate) {
   let clickMode = null
   let gameActive = false
+  let lastLevelData = null
 
   const root = document.createElement('div')
   root.className = 'view view-play'
 
   root.innerHTML = `
     <header class="play-header">
-      <a href="/" class="nav-link back-link" data-path="/">← Back</a>
-      <h1 class="play-title">DUNGEON RUNNER</h1>
-      <button type="button" class="play-gear" aria-label="Settings">⚙</button>
+      <div class="play-header-spacer"></div>
+      <h1 class="play-title"><img src="/DR-Logo.png" alt="Dungeon Runner" class="app-logo" /></h1>
+      <div class="play-settings-wrap">
+        <button type="button" class="play-gear" aria-label="Settings" aria-expanded="false" aria-haspopup="menu" id="play-gear"><img src="/settings-icon.png" alt="" class="play-gear-icon" aria-hidden="true" /></button>
+        <div class="play-settings-menu" id="play-settings-menu" role="menu" hidden>
+          <a href="/" class="play-settings-menu-item nav-link" data-path="/" role="menuitem">← Back</a>
+        </div>
+      </div>
     </header>
-    <p class="play-turn-indicator" id="play-turn-indicator">Load a level to start</p>
+    <p class="play-turn-indicator" id="play-turn-indicator"></p>
     <div class="play-stage-wrap">
       <div class="play-opponent-overlay" id="play-opponent-overlay" aria-live="polite" hidden>
         <span class="play-opponent-spinner"></span>
         <span class="play-opponent-label">Opponent turn</span>
       </div>
-      <div class="canvas-wrap play-canvas-wrap">
-        <canvas class="puzzle-canvas" id="play-canvas"></canvas>
+      <div class="play-stage-inner">
+        <div class="canvas-wrap play-canvas-wrap">
+          <canvas class="puzzle-canvas" id="play-canvas"></canvas>
+        </div>
+        <div class="play-bottom-bar">
+          <div class="play-dice-wrap">
+            <button type="button" class="play-dice-tap" id="play-dice-tap">Tap</button>
+            <div class="play-dice" id="play-dice" role="img" aria-label="Dice showing 0" data-value="0">
+            <span class="play-dice-pip pip-1" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-2" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-3" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-4" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-5" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-6" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-7" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-8" aria-hidden="true">●</span>
+            <span class="play-dice-pip pip-9" aria-hidden="true">●</span>
+            </div>
+          </div>
+          <div class="play-status-bar">
+            <div class="play-hearts" id="play-hearts" aria-label="Player hit points"></div>
+            <div class="play-energy" id="play-energy" aria-label="Action points"></div>
+          </div>
+        </div>
+        <div class="play-actions" role="toolbar" aria-label="Action card slots">
+          <div class="play-action-slot" aria-hidden="true"></div>
+          <div class="play-action-slot" aria-hidden="true"></div>
+          <div class="play-action-slot" aria-hidden="true"></div>
+          <div class="play-action-slot" aria-hidden="true"></div>
+          <div class="play-action-slot" aria-hidden="true"></div>
+          <div class="play-action-slot" aria-hidden="true"></div>
+          <div class="play-action-slot" aria-hidden="true"></div>
+          <div class="play-action-slot" aria-hidden="true"></div>
+        </div>
       </div>
-      <div class="play-status-bar">
-        <span class="play-status-item"><span class="play-status-icon" aria-hidden="true">🎲</span> <span id="play-dice">–</span></span>
-        <span class="play-status-item"><span class="play-status-icon" aria-hidden="true">❤</span> <span id="play-hp">–</span></span>
-        <span class="play-status-item"><span class="play-status-icon" aria-hidden="true">⚡</span> <span id="play-ap">–</span></span>
-      </div>
-      <div class="play-actions" role="toolbar">
-        <button type="button" class="play-action-card" id="play-btn-move">Move</button>
-        <button type="button" class="play-action-card" id="play-btn-attack">Attack</button>
-        <button type="button" class="play-action-card" id="play-btn-defend">Defend</button>
-        <button type="button" class="play-action-card" id="play-btn-end">End turn</button>
-      </div>
-    </div>
-    <div class="play-load-wrap">
-      <label class="action-btn action-btn-import">
-        Load level
-        <input type="file" accept=".json,application/json" id="play-load-level" hidden />
-      </label>
     </div>
   `
 
-  const backLink = root.querySelector('[data-path="/"]')
+  const gearBtn = root.querySelector('#play-gear')
+  const settingsMenu = root.querySelector('#play-settings-menu')
+  const backLink = root.querySelector('.play-settings-menu-item[data-path="/"]')
+  if (gearBtn && settingsMenu) {
+    gearBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const open = settingsMenu.hidden
+      settingsMenu.hidden = !open
+      gearBtn.setAttribute('aria-expanded', open)
+    })
+    document.addEventListener('click', (e) => {
+      if (!settingsMenu.hidden && !gearBtn.contains(e.target) && !settingsMenu.contains(e.target)) {
+        settingsMenu.hidden = true
+        gearBtn.setAttribute('aria-expanded', 'false')
+      }
+    })
+  }
   if (backLink) {
     backLink.addEventListener('click', (e) => {
       e.preventDefault()
@@ -69,7 +106,6 @@ export function renderPlay(navigate) {
     if (
       gameActive &&
       gameState.getTurn() === 'player' &&
-      clickMode === 'move' &&
       gameState.getActionPoints() >= 1
     ) {
       const playerPos = gameState.getPlayerPosition()
@@ -104,24 +140,44 @@ export function renderPlay(navigate) {
   function updateUI() {
     const indicator = root.querySelector('#play-turn-indicator')
     const diceEl = root.querySelector('#play-dice')
-    const hpEl = root.querySelector('#play-hp')
-    const apEl = root.querySelector('#play-ap')
-    const btnMove = root.querySelector('#play-btn-move')
-    const btnAttack = root.querySelector('#play-btn-attack')
-    const btnDefend = root.querySelector('#play-btn-defend')
-    const btnEnd = root.querySelector('#play-btn-end')
+    const tapBtn = root.querySelector('#play-dice-tap')
 
     if (!gameActive) {
-      indicator.textContent = 'Load a level to start'
-      diceEl.textContent = '–'
-      hpEl.textContent = '–'
-      apEl.textContent = '–'
+      if (tapBtn) tapBtn.classList.remove('play-dice-tap-visible')
+      indicator.textContent = ''
+      if (diceEl) {
+        const defaultRoll = 1 + Math.floor(Math.random() * 6)
+        diceEl.setAttribute('data-value', String(defaultRoll))
+        diceEl.setAttribute('aria-label', `Dice showing ${defaultRoll}`)
+        const pipMap = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] }
+        const show = pipMap[defaultRoll] || []
+        for (let i = 1; i <= 9; i++) {
+          const pip = diceEl.querySelector(`.pip-${i}`)
+          if (pip) pip.classList.toggle('show', show.includes(i))
+        }
+      }
+      const heartsEl = root.querySelector('#play-hearts')
+      if (heartsEl) {
+        const count = 6
+        let html = ''
+        for (let i = 0; i < count; i++) {
+          html += `<img src="/heart-icon.svg" alt="" class="play-heart" aria-hidden="true" />`
+        }
+        heartsEl.innerHTML = html
+        heartsEl.setAttribute('aria-label', `${count} of ${count} hit points`)
+      }
+      const energyEl = root.querySelector('#play-energy')
+      if (energyEl) {
+        const count = 6
+        let html = ''
+        for (let i = 0; i < count; i++) {
+          html += `<img src="/energy-icon.svg" alt="" class="play-energy-icon" aria-hidden="true" />`
+        }
+        energyEl.innerHTML = html
+        energyEl.setAttribute('aria-label', `${count} action points`)
+      }
       const overlay = root.querySelector('#play-opponent-overlay')
       if (overlay) overlay.hidden = true
-      btnMove.disabled = true
-      btnAttack.disabled = true
-      btnDefend.disabled = true
-      btnEnd.disabled = true
       return
     }
 
@@ -132,27 +188,51 @@ export function renderPlay(navigate) {
     const dice = gameState.getDiceRoll()
 
     const overlay = root.querySelector('#play-opponent-overlay')
+    const iconCount = 6
+    const heartsEl = root.querySelector('#play-hearts')
+    if (heartsEl) {
+      const filledHearts = maxHp > 0 ? Math.round((hp / maxHp) * iconCount) : iconCount
+      let html = ''
+      for (let i = 0; i < iconCount; i++) {
+        const filled = i < filledHearts
+        const src = filled ? '/heart-icon.svg' : '/heart-icon-outline.svg'
+        html += `<img src="${src}" alt="" class="play-heart" aria-hidden="true" />`
+      }
+      heartsEl.innerHTML = html
+      heartsEl.setAttribute('aria-label', `${hp} of ${maxHp} hit points`)
+    }
+    const energyEl = root.querySelector('#play-energy')
+    if (energyEl) {
+      let html = ''
+      for (let i = 0; i < iconCount; i++) {
+        const filled = i < ap
+        const src = filled ? '/energy-icon.svg' : '/energy-icon-outline.svg'
+        html += `<img src="${src}" alt="" class="play-energy-icon" aria-hidden="true" />`
+      }
+      energyEl.innerHTML = html
+      energyEl.setAttribute('aria-label', `${ap} action points`)
+    }
+    if (diceEl) {
+      diceEl.setAttribute('data-value', String(dice))
+      diceEl.setAttribute('aria-label', `Dice showing ${dice}`)
+      const pipMap = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] }
+      const show = pipMap[dice] || []
+      for (let i = 1; i <= 9; i++) {
+        const pip = diceEl.querySelector(`.pip-${i}`)
+        if (pip) pip.classList.toggle('show', show.includes(i))
+      }
+    }
     if (turn === 'opponent') {
+      if (tapBtn) tapBtn.classList.remove('play-dice-tap-visible')
       indicator.textContent = 'Opponent turn'
       if (overlay) overlay.hidden = false
-      btnMove.disabled = true
-      btnAttack.disabled = true
-      btnDefend.disabled = true
-      btnEnd.disabled = true
     } else {
       if (overlay) overlay.hidden = true
+      const needsRoll = dice === 0
+      if (tapBtn) tapBtn.classList.toggle('play-dice-tap-visible', needsRoll)
       indicator.textContent = 'Your turn'
-      diceEl.textContent = String(dice)
-      hpEl.textContent = `${hp}/${maxHp}`
-      apEl.textContent = String(ap)
-      btnMove.disabled = ap < 1
-      btnAttack.disabled = ap < 1
-      btnDefend.disabled = ap < 1
-      btnEnd.disabled = ap !== 0
       if (ap === 0) {
         clickMode = null
-        root.querySelector('#play-btn-move')?.classList.remove('active')
-        root.querySelector('#play-btn-attack')?.classList.remove('active')
       }
     }
   }
@@ -163,96 +243,13 @@ export function renderPlay(navigate) {
       return
     }
     gameActive = true
-    gameState.rollDice()
     updateUI()
     renderCanvas()
   }
 
-  function onCellClick(row, col) {
+  function endPlayerTurnNow() {
     if (!gameActive || gameState.getTurn() !== 'player') return
-    const playerPos = gameState.getPlayerPosition()
-    if (!playerPos) return
-    const gridData = playState.getState()
-    const cell = gridData[row]?.[col]
-    if (!cell) return
-
-    if (clickMode === 'move') {
-      const ap = gameState.getActionPoints()
-      if (ap < 1) return
-      const reachable = getReachableCells(
-        gridData,
-        playerPos.row,
-        playerPos.col,
-        ap
-      )
-      const isReachable = reachable.some((c) => c.row === row && c.col === col)
-      if (!isReachable) return
-      const next = getNextStepToward(
-        gridData,
-        playerPos.row,
-        playerPos.col,
-        row,
-        col
-      )
-      if (!next) return
-      if (!gameState.spendPoints(1)) return
-      const destCell = gridData[next.row]?.[next.col]
-      const movedToExit = destCell?.entity === 'exit'
-      gameState.movePlayer(playerPos.row, playerPos.col, next.row, next.col)
-      updateUI()
-      renderCanvas()
-      if (movedToExit) {
-        gameActive = false
-        updateUI()
-        alert('You win!')
-      }
-      return
-    }
-
-    if (clickMode === 'attack') {
-      if (gameState.getActionPoints() < 1) return
-      if (!gameState.isAdjacent(playerPos.row, playerPos.col, row, col)) return
-      if (cell.entity !== 'enemy') return
-      const enemy = gameState.getEnemies().find((e) => e.row === row && e.col === col)
-      const maxHp = enemy?.maxHealth ?? 3
-      const healthBefore = enemy?.health ?? 0
-      if (!gameState.spendPoints(1)) return
-      gameState.damageEnemy(row, col, 1)
-      const remaining = Math.max(0, healthBefore - 1)
-      showDamageIndicator(row, col, remaining, maxHp)
-      updateUI()
-      renderCanvas()
-    }
-  }
-
-  canvas.addEventListener('click', (e) => {
-    const cell = grid.getCellFromPoint(canvas, e.clientX, e.clientY)
-    if (cell) onCellClick(cell.row, cell.col)
-  })
-
-  root.querySelector('#play-btn-move').addEventListener('click', () => {
-    clickMode = clickMode === 'move' ? null : 'move'
-    root.querySelector('#play-btn-move').classList.toggle('active', clickMode === 'move')
-    root.querySelector('#play-btn-attack').classList.toggle('active', clickMode === 'attack')
-    renderCanvas()
-  })
-  root.querySelector('#play-btn-attack').addEventListener('click', () => {
-    clickMode = clickMode === 'attack' ? null : 'attack'
-    root.querySelector('#play-btn-attack').classList.toggle('active', clickMode === 'attack')
-    root.querySelector('#play-btn-move').classList.toggle('active', clickMode === 'move')
-    renderCanvas()
-  })
-  root.querySelector('#play-btn-defend').addEventListener('click', () => {
-    if (gameState.getTurn() !== 'player' || gameState.getActionPoints() < 1) return
-    gameState.spendPoints(1)
-    gameState.healPlayer(1)
-    updateUI()
-  })
-  root.querySelector('#play-btn-end').addEventListener('click', () => {
-    if (gameState.getTurn() !== 'player' || gameState.getActionPoints() !== 0) return
     clickMode = null
-    root.querySelector('#play-btn-move').classList.remove('active')
-    root.querySelector('#play-btn-attack').classList.remove('active')
     gameState.endPlayerTurn()
     updateUI()
     renderCanvas()
@@ -268,38 +265,135 @@ export function renderPlay(navigate) {
         updateUI()
         renderCanvas()
         if (gameState.getPlayerHealth() <= 0) {
-          gameActive = false
-          updateUI()
-          alert('You lose!')
+          if (lastLevelData) {
+            playState.loadFromJson(lastLevelData)
+            renderCanvas()
+            startGame()
+          } else {
+            gameActive = false
+            updateUI()
+            alert('You lose!')
+          }
         }
       }, remaining)
     }, 100)
+  }
+
+  function scheduleEndTurnIfNoAp() {
+    if (gameActive && gameState.getTurn() === 'player' && gameState.getActionPoints() === 0) {
+      setTimeout(endPlayerTurnNow, 1000)
+    }
+  }
+
+  function onCellClick(row, col) {
+    if (!gameActive || gameState.getTurn() !== 'player') return
+    const playerPos = gameState.getPlayerPosition()
+    if (!playerPos) return
+    const gridData = playState.getState()
+    const cell = gridData[row]?.[col]
+    if (!cell) return
+
+    const ap = gameState.getActionPoints()
+
+    if (clickMode === 'attack' && ap >= 1 && gameState.isAdjacent(playerPos.row, playerPos.col, row, col) && cell.entity === 'enemy') {
+      const enemy = gameState.getEnemies().find((e) => e.row === row && e.col === col)
+      const maxHp = enemy?.maxHealth ?? 3
+      const healthBefore = enemy?.health ?? 0
+      if (!gameState.spendPoints(1)) return
+      gameState.damageEnemy(row, col, 1)
+      const remaining = Math.max(0, healthBefore - 1)
+      showDamageIndicator(row, col, remaining, maxHp)
+      updateUI()
+      renderCanvas()
+      scheduleEndTurnIfNoAp()
+      return
+    }
+
+    if (ap >= 1) {
+      const reachable = getReachableCells(
+        gridData,
+        playerPos.row,
+        playerPos.col,
+        ap
+      )
+      const isReachable = reachable.some((c) => c.row === row && c.col === col)
+      if (isReachable) {
+        const next = getNextStepToward(
+          gridData,
+          playerPos.row,
+          playerPos.col,
+          row,
+          col
+        )
+        if (next && gameState.spendPoints(1)) {
+          const destCell = gridData[next.row]?.[next.col]
+          const movedToExit = destCell?.entity === 'exit'
+          const movedToCollectible = destCell?.entity === 'collectible'
+          gameState.movePlayer(playerPos.row, playerPos.col, next.row, next.col)
+          if (movedToCollectible) gameState.addActionPoints(1)
+          updateUI()
+          renderCanvas()
+          if (movedToExit) {
+            gameActive = false
+            updateUI()
+            alert('You win!')
+          } else {
+            scheduleEndTurnIfNoAp()
+          }
+        }
+      }
+    }
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const cell = grid.getCellFromPoint(canvas, e.clientX, e.clientY)
+    if (cell) onCellClick(cell.row, cell.col)
   })
 
   function loadLevel(file) {
     const reader = new FileReader()
     reader.onload = () => {
+      let data
       try {
-        const data = JSON.parse(reader.result)
-        if (!playState.loadFromJson(data)) {
-          alert('Invalid level file.')
-          return
-        }
-        renderCanvas()
-        startGame()
+        const text = typeof reader.result === 'string' ? reader.result.trim() : ''
+        data = JSON.parse(text)
       } catch (_) {
-        alert('Invalid level file.')
+        alert('Invalid level file: not valid JSON.')
+        return
       }
+      if (!data || !playState.loadFromJson(data)) {
+        alert('Invalid level file: need an 8×8 grid with a player cell.')
+        return
+      }
+      lastLevelData = data
+      renderCanvas()
+      startGame()
     }
+    reader.onerror = () => alert('Could not read file.')
     reader.readAsText(file)
   }
 
-  root.querySelector('#play-load-level').addEventListener('change', (e) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      loadLevel(file)
-      e.target.value = ''
-    }
+  function loadDefaultLevel() {
+    fetch('/levels/level-1.json')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && playState.loadFromJson(data)) {
+          lastLevelData = data
+          renderCanvas()
+          startGame()
+        }
+      })
+      .catch(() => {})
+  }
+
+  loadDefaultLevel()
+
+  root.querySelector('#play-dice-tap').addEventListener('click', () => {
+    if (!gameActive || gameState.getTurn() !== 'player' || gameState.getDiceRoll() !== 0) return
+    gameState.rollDice()
+    root.querySelector('#play-dice-tap').classList.remove('play-dice-tap-visible')
+    updateUI()
+    renderCanvas()
   })
 
   renderCanvas()
