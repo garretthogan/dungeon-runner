@@ -45,6 +45,7 @@ a:active {
 
 html {
   overflow-x: hidden;
+  touch-action: manipulation;
 }
 body {
   margin: 0;
