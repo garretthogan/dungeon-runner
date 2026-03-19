@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import { copyFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
+// For GitHub Pages project site (e.g. garretthogan.github.io/dungeon-runner/), build with:
+//   BASE_PATH=/dungeon-runner/ npm run build
 export default defineConfig({
   appType: 'spa',
   base: process.env.BASE_PATH || '/',

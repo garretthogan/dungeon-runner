@@ -7,6 +7,8 @@ import { getReachableCells, getNextStepToward } from '../play/pathfinding.js'
 
 const DAMAGE_INDICATOR_MS = 1200
 
+const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/'
+
 export function renderPlay(navigate) {
   let clickMode = null
   let gameActive = false
@@ -18,9 +20,9 @@ export function renderPlay(navigate) {
   root.innerHTML = `
     <header class="play-header">
       <div class="play-header-spacer"></div>
-      <h1 class="play-title"><img src="/DR-Logo.png" alt="Dungeon Runner" class="app-logo" /></h1>
+      <h1 class="play-title"><img src="${baseUrl}DR-Logo.png" alt="Dungeon Runner" class="app-logo" /></h1>
       <div class="play-settings-wrap">
-        <button type="button" class="play-gear" aria-label="Settings" aria-expanded="false" aria-haspopup="menu" id="play-gear"><img src="/settings-icon.png" alt="" class="play-gear-icon" aria-hidden="true" /></button>
+        <button type="button" class="play-gear" aria-label="Settings" aria-expanded="false" aria-haspopup="menu" id="play-gear"><img src="${baseUrl}settings-icon.png" alt="" class="play-gear-icon" aria-hidden="true" /></button>
         <div class="play-settings-menu" id="play-settings-menu" role="menu" hidden>
           <a href="/" class="play-settings-menu-item nav-link" data-path="/" role="menuitem">← Back</a>
         </div>
@@ -161,7 +163,7 @@ export function renderPlay(navigate) {
         const count = 6
         let html = ''
         for (let i = 0; i < count; i++) {
-          html += `<img src="/heart-icon.svg" alt="" class="play-heart" aria-hidden="true" />`
+          html += `<img src="${baseUrl}heart-icon.svg" alt="" class="play-heart" aria-hidden="true" />`
         }
         heartsEl.innerHTML = html
         heartsEl.setAttribute('aria-label', `${count} of ${count} hit points`)
@@ -171,7 +173,7 @@ export function renderPlay(navigate) {
         const count = 6
         let html = ''
         for (let i = 0; i < count; i++) {
-          html += `<img src="/energy-icon.svg" alt="" class="play-energy-icon" aria-hidden="true" />`
+          html += `<img src="${baseUrl}energy-icon.svg" alt="" class="play-energy-icon" aria-hidden="true" />`
         }
         energyEl.innerHTML = html
         energyEl.setAttribute('aria-label', `${count} action points`)
@@ -195,7 +197,7 @@ export function renderPlay(navigate) {
       let html = ''
       for (let i = 0; i < iconCount; i++) {
         const filled = i < filledHearts
-        const src = filled ? '/heart-icon.svg' : '/heart-icon-outline.svg'
+        const src = filled ? `${baseUrl}heart-icon.svg` : `${baseUrl}heart-icon-outline.svg`
         html += `<img src="${src}" alt="" class="play-heart" aria-hidden="true" />`
       }
       heartsEl.innerHTML = html
@@ -206,7 +208,7 @@ export function renderPlay(navigate) {
       let html = ''
       for (let i = 0; i < iconCount; i++) {
         const filled = i < ap
-        const src = filled ? '/energy-icon.svg' : '/energy-icon-outline.svg'
+        const src = filled ? `${baseUrl}energy-icon.svg` : `${baseUrl}energy-icon-outline.svg`
         html += `<img src="${src}" alt="" class="play-energy-icon" aria-hidden="true" />`
       }
       energyEl.innerHTML = html
@@ -374,7 +376,7 @@ export function renderPlay(navigate) {
   }
 
   function loadDefaultLevel() {
-    fetch('/levels/level-1.json')
+    fetch(`${baseUrl}levels/level-1.json`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && playState.loadFromJson(data)) {

@@ -16,12 +16,13 @@ export function renderEditor(navigate) {
   const root = document.createElement('div')
   root.className = 'view view-editor'
 
+  const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/'
   root.innerHTML = `
     <header class="editor-header">
       <div class="editor-header-spacer"></div>
-      <h1 class="editor-title"><img src="/DR-Logo.png" alt="Dungeon Runner" class="app-logo" /></h1>
+      <h1 class="editor-title"><img src="${baseUrl}DR-Logo.png" alt="Dungeon Runner" class="app-logo" /></h1>
       <div class="editor-settings-wrap">
-        <button type="button" class="play-gear editor-gear" aria-label="Settings" aria-expanded="false" aria-haspopup="menu" id="editor-gear"><img src="/settings-icon.png" alt="" class="play-gear-icon" aria-hidden="true" /></button>
+        <button type="button" class="play-gear editor-gear" aria-label="Settings" aria-expanded="false" aria-haspopup="menu" id="editor-gear"><img src="${baseUrl}settings-icon.png" alt="" class="play-gear-icon" aria-hidden="true" /></button>
         <div class="play-settings-menu editor-settings-menu" id="editor-settings-menu" role="menu" hidden>
           <a href="/" class="play-settings-menu-item nav-link" data-path="/" role="menuitem">← Back</a>
         </div>
