@@ -164,7 +164,10 @@ export function renderPlay(navigate) {
 
       const playerCell = allCells[randomInt(0, allCells.length - 1)]
       const farCells = allCells.filter(
-        (c) => Math.abs(c.row - playerCell.row) + Math.abs(c.col - playerCell.col) >= 6
+        (c) =>
+          Math.abs(c.row - playerCell.row) + Math.abs(c.col - playerCell.col) >= 6 &&
+          c.row !== playerCell.row &&
+          c.col !== playerCell.col
       )
       if (farCells.length === 0) continue
       const exitCell = farCells[randomInt(0, farCells.length - 1)]
@@ -193,7 +196,10 @@ export function renderPlay(navigate) {
       const freeCells = shuffle(
         allCells.filter((c) => {
           const cell = gridData[c.row][c.col]
-          return cell.base === 'movement' && cell.entity == null
+          if (!(cell.base === 'movement' && cell.entity == null)) return false
+          const distToPlayer = Math.abs(c.row - playerCell.row) + Math.abs(c.col - playerCell.col)
+          // Never spawn enemies adjacent to the player.
+          return distToPlayer > 1
         })
       )
 

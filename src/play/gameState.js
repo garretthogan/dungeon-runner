@@ -53,7 +53,18 @@ export function initFromGrid(grid) {
 }
 
 export function rollDice() {
-  diceRoll = 1 + Math.floor(Math.random() * 6)
+  const r = Math.random()
+  // Weighted for game feel:
+  // - 1/2/3: 10% each (30% total)
+  // - 4/5: 32.5% each (65% total)
+  // - 6: 5%
+  // This keeps "above 3" at 70% while making 6 about 5%.
+  if (r < 0.1) diceRoll = 1
+  else if (r < 0.2) diceRoll = 2
+  else if (r < 0.3) diceRoll = 3
+  else if (r < 0.625) diceRoll = 4
+  else if (r < 0.95) diceRoll = 5
+  else diceRoll = 6
   actionPoints = diceRoll
   return diceRoll
 }
