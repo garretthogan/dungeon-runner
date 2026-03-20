@@ -45,7 +45,21 @@ a:active {
 
 html {
   overflow-x: hidden;
+  overflow-y: hidden;
   touch-action: manipulation;
+  overscroll-behavior: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  a,
+  button,
+  .nav-link,
+  .tool-btn,
+  .action-btn,
+  .play-gear,
+  .play-dice-tap,
+  .puzzle-canvas {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 body {
   margin: 0;
@@ -54,6 +68,7 @@ body {
   min-width: 280px;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 h1 {
