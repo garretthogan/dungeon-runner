@@ -144,8 +144,10 @@ export function endPlayerTurn() {
 
 export function endOpponentTurn() {
   turn = 'player'
-  diceRoll = 0
-  actionPoints = 0
+  if (actionPoints <= 0) {
+    diceRoll = 0
+    actionPoints = 0
+  }
 }
 
 export function isAdjacent(r1, c1, r2, c2) {

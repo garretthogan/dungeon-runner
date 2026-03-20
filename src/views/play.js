@@ -7,13 +7,95 @@ import { getReachableCells, getNextStepToward } from '../play/pathfinding.js'
 
 const DAMAGE_INDICATOR_MS = 1200
 const GRID_SIZE = 8
+const ACTION_SLOT_COUNT = 8
 
 const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/'
+const TUTORIAL_MANIFEST_URL = `${baseUrl}tutorial-seeds-manifest.json`
+const ACTION_CARD_OPTIONS = [
+  { id: 'knight', name: 'Knight', icon: `${baseUrl}kknight-icon.png`, cost: 2 },
+  { id: 'queen', name: 'Queen', icon: `${baseUrl}queen-icon.png`, cost: 4 },
+  { id: 'rook', name: 'Rook', icon: `${baseUrl}rook-icon.png`, cost: 3 },
+]
+
+function hashStringToUint32(input) {
+  let h = 2166136261
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+function createSeededRandom(seedValue) {
+  let t = hashStringToUint32(seedValue) || 1
+  return () => {
+    t += 0x6d2b79f5
+    let x = t
+    x = Math.imul(x ^ (x >>> 15), x | 1)
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61)
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function parseHashParams() {
+  const raw = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash
+  if (!raw) return new URLSearchParams()
+  const params = new URLSearchParams(raw)
+  if ([...params.keys()].length > 0) return params
+  const legacySeed = decodeURIComponent(raw).trim()
+  const legacyParams = new URLSearchParams()
+  if (legacySeed) legacyParams.set('seed', legacySeed)
+  return legacyParams
+}
+
+function generateSeedKey() {
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(6)
+    crypto.getRandomValues(bytes)
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  return `${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`
+}
+
+function setHashParams(params) {
+  const hash = params.toString()
+  const suffix = hash ? `#${hash}` : ''
+  const url = `${window.location.pathname}${window.location.search}${suffix}`
+  history.replaceState(history.state, '', url)
+}
+
+async function loadTutorialSeeds() {
+  const response = await fetch(TUTORIAL_MANIFEST_URL, { cache: 'no-cache' })
+  if (!response.ok) throw new Error('Could not load tutorial seed manifest.')
+  const data = await response.json()
+  if (!Array.isArray(data?.seeds)) throw new Error('Tutorial manifest is missing seeds.')
+  const seeds = data.seeds.map((seed) => `${seed}`.trim()).filter(Boolean)
+  if (seeds.length === 0) throw new Error('Tutorial seed list is empty.')
+  return seeds
+}
 
 export function renderPlay(navigate) {
   let gameActive = false
   let lastLevelData = null
   let endlessLevel = 1
+  let completedPuzzles = 0
+  const selectedActionCards = []
+  const hashParams = parseHashParams()
+  const mode = hashParams.get('mode') === 'tutorial' ? 'tutorial' : 'endless'
+  let tutorialSeeds = []
+  let tutorialSeedIndex = Math.max(0, Number.parseInt(hashParams.get('tutorialSeed') || '0', 10) || 0)
+  let seedKey = (hashParams.get('seed') || '').trim()
+  if (!seedKey) {
+    seedKey = generateSeedKey()
+  }
+  hashParams.set('seed', seedKey)
+  if (mode !== 'tutorial') {
+    hashParams.delete('tutorialSeed')
+    hashParams.delete('mode')
+  }
+  setHashParams(hashParams)
 
   const root = document.createElement('div')
   root.className = 'view view-play'
@@ -31,10 +113,6 @@ export function renderPlay(navigate) {
     </header>
     <p class="play-turn-indicator" id="play-turn-indicator"></p>
     <div class="play-stage-wrap">
-      <div class="play-opponent-overlay" id="play-opponent-overlay" aria-live="polite" hidden>
-        <span class="play-opponent-spinner"></span>
-        <span class="play-opponent-label">Opponent turn</span>
-      </div>
       <div class="play-stage-inner">
         <div class="canvas-wrap play-canvas-wrap">
           <canvas class="puzzle-canvas" id="play-canvas"></canvas>
@@ -60,15 +138,18 @@ export function renderPlay(navigate) {
           </div>
         </div>
         <div class="play-actions" role="toolbar" aria-label="Action card slots">
-          <div class="play-action-slot" aria-hidden="true"></div>
-          <div class="play-action-slot" aria-hidden="true"></div>
-          <div class="play-action-slot" aria-hidden="true"></div>
-          <div class="play-action-slot" aria-hidden="true"></div>
-          <div class="play-action-slot" aria-hidden="true"></div>
-          <div class="play-action-slot" aria-hidden="true"></div>
-          <div class="play-action-slot" aria-hidden="true"></div>
-          <div class="play-action-slot" aria-hidden="true"></div>
+          ${Array.from(
+            { length: ACTION_SLOT_COUNT },
+            (_, idx) => `<div class="play-action-slot" data-slot-index="${idx}" aria-label="Empty action slot"></div>`
+          ).join('')}
         </div>
+      </div>
+    </div>
+    <div class="play-card-modal-backdrop" id="play-card-modal-backdrop" hidden>
+      <div class="play-card-modal" role="dialog" aria-modal="true" aria-labelledby="play-card-modal-title">
+        <h2 class="play-card-modal-title" id="play-card-modal-title">Choose an action card</h2>
+        <p class="play-card-modal-subtitle">Pick one reward card.</p>
+        <div class="play-card-choice-list" id="play-card-choice-list"></div>
       </div>
     </div>
   `
@@ -102,15 +183,78 @@ export function renderPlay(navigate) {
   canvas.id = 'play-canvas'
   canvasWrap.innerHTML = ''
   canvasWrap.appendChild(canvas)
+  const cardModalBackdrop = root.querySelector('#play-card-modal-backdrop')
+  const cardChoiceList = root.querySelector('#play-card-choice-list')
 
-  function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min
+  function renderActionSlots() {
+    const slots = root.querySelectorAll('.play-action-slot')
+    slots.forEach((slot, idx) => {
+      const card = selectedActionCards[idx]
+      slot.classList.toggle('play-action-slot-filled', Boolean(card))
+      if (!card) {
+        slot.innerHTML = ''
+        slot.setAttribute('aria-label', 'Empty action slot')
+        return
+      }
+      slot.setAttribute('aria-label', `${card.name} card, costs ${card.cost} energy`)
+      slot.innerHTML = `
+        <div class="play-action-card">
+          <img src="${card.icon}" alt="" class="play-action-card-icon" aria-hidden="true" />
+          <div class="play-action-card-name">${card.name}</div>
+          <div class="play-action-card-cost">
+            <img src="${baseUrl}energy-icon.png" alt="" class="play-action-card-cost-icon" aria-hidden="true" />
+            <span>${card.cost}</span>
+          </div>
+        </div>
+      `
+    })
   }
 
-  function shuffle(items) {
+  function showCardChoiceModal() {
+    if (!cardModalBackdrop || !cardChoiceList) return Promise.resolve()
+    cardChoiceList.innerHTML = ACTION_CARD_OPTIONS.map(
+      (card) => `
+        <button type="button" class="play-card-choice-btn" data-card-id="${card.id}">
+          <img src="${card.icon}" alt="" class="play-card-choice-icon" aria-hidden="true" />
+          <div class="play-card-choice-name">${card.name}</div>
+          <div class="play-card-choice-cost">
+            <img src="${baseUrl}energy-icon.png" alt="" class="play-card-choice-cost-icon" aria-hidden="true" />
+            <span>${card.cost}</span>
+          </div>
+        </button>
+      `
+    ).join('')
+    cardModalBackdrop.hidden = false
+    return new Promise((resolve) => {
+      const onClick = (e) => {
+        const btn = e.target.closest('[data-card-id]')
+        if (!btn) return
+        const picked = ACTION_CARD_OPTIONS.find((card) => card.id === btn.getAttribute('data-card-id'))
+        if (picked && selectedActionCards.length < ACTION_SLOT_COUNT) {
+          selectedActionCards.push({ ...picked })
+          renderActionSlots()
+        }
+        cardChoiceList.removeEventListener('click', onClick)
+        cardModalBackdrop.hidden = true
+        resolve()
+      }
+      cardChoiceList.addEventListener('click', onClick)
+    })
+  }
+
+  async function maybeAwardCardAfterPuzzle() {
+    if (completedPuzzles === 0 || completedPuzzles % 5 !== 0) return
+    await showCardChoiceModal()
+  }
+
+  function randomInt(min, max, randomFn = Math.random) {
+    return Math.floor(randomFn() * (max - min + 1)) + min
+  }
+
+  function shuffle(items, randomFn = Math.random) {
     const arr = [...items]
     for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
+      const j = Math.floor(randomFn() * (i + 1))
       const tmp = arr[i]
       arr[i] = arr[j]
       arr[j] = tmp
@@ -149,8 +293,9 @@ export function renderPlay(navigate) {
     return false
   }
 
-  function createEndlessLevel(levelNumber) {
+  function createEndlessLevel(levelNumber, sourceSeed) {
     for (let attempt = 0; attempt < 60; attempt++) {
+      const randomFn = createSeededRandom(`${sourceSeed}:${levelNumber}:${attempt}`)
       const gridData = Array.from({ length: GRID_SIZE }, () =>
         Array.from({ length: GRID_SIZE }, () => ({ base: 'movement', entity: null }))
       )
@@ -162,20 +307,29 @@ export function renderPlay(navigate) {
         }
       }
 
-      const playerCell = allCells[randomInt(0, allCells.length - 1)]
-      const farCells = allCells.filter(
-        (c) =>
-          Math.abs(c.row - playerCell.row) + Math.abs(c.col - playerCell.col) >= 6 &&
-          c.row !== playerCell.row &&
-          c.col !== playerCell.col
-      )
-      if (farCells.length === 0) continue
-      const exitCell = farCells[randomInt(0, farCells.length - 1)]
+      const borderPair = randomInt(0, 1, randomFn)
+      let playerCell
+      let exitCell
+      if (borderPair === 0) {
+        // Opposite vertical borders: top <-> bottom.
+        const exitOnTop = randomInt(0, 1, randomFn) === 0
+        const exitCol = randomInt(0, GRID_SIZE - 1, randomFn)
+        const playerCol = randomInt(0, GRID_SIZE - 1, randomFn)
+        exitCell = { row: exitOnTop ? 0 : GRID_SIZE - 1, col: exitCol }
+        playerCell = { row: exitOnTop ? GRID_SIZE - 1 : 0, col: playerCol }
+      } else {
+        // Opposite horizontal borders: left <-> right.
+        const exitOnLeft = randomInt(0, 1, randomFn) === 0
+        const exitRow = randomInt(0, GRID_SIZE - 1, randomFn)
+        const playerRow = randomInt(0, GRID_SIZE - 1, randomFn)
+        exitCell = { row: exitRow, col: exitOnLeft ? 0 : GRID_SIZE - 1 }
+        playerCell = { row: playerRow, col: exitOnLeft ? GRID_SIZE - 1 : 0 }
+      }
 
       const reserved = new Set([cellKey(playerCell.row, playerCell.col), cellKey(exitCell.row, exitCell.col)])
       const obstacleCount = Math.min(22, 8 + levelNumber)
       let placedObstacles = 0
-      for (const c of shuffle(allCells)) {
+      for (const c of shuffle(allCells, randomFn)) {
         const key = cellKey(c.row, c.col)
         if (reserved.has(key)) continue
         if (placedObstacles >= obstacleCount) break
@@ -200,7 +354,8 @@ export function renderPlay(navigate) {
           const distToPlayer = Math.abs(c.row - playerCell.row) + Math.abs(c.col - playerCell.col)
           // Never spawn enemies adjacent to the player.
           return distToPlayer > 1
-        })
+        }),
+        randomFn
       )
 
       const redCount = Math.min(8, 2 + Math.floor(levelNumber / 2))
@@ -235,7 +390,21 @@ export function renderPlay(navigate) {
   }
 
   function startEndlessLevel(levelNumber) {
-    const levelData = createEndlessLevel(levelNumber)
+    const levelData = createEndlessLevel(levelNumber, seedKey)
+    if (!levelData) return false
+    return startLevelData(levelData)
+  }
+
+  function startTutorialLevel(index) {
+    const selectedSeed = tutorialSeeds[index]
+    if (!selectedSeed) return false
+    tutorialSeedIndex = index
+    seedKey = selectedSeed
+    hashParams.set('mode', 'tutorial')
+    hashParams.set('tutorialSeed', String(tutorialSeedIndex))
+    hashParams.set('seed', seedKey)
+    setHashParams(hashParams)
+    const levelData = createEndlessLevel(1, seedKey)
     if (!levelData) return false
     return startLevelData(levelData)
   }
@@ -250,12 +419,28 @@ export function renderPlay(navigate) {
     }
   }
 
+  function advanceTutorialMode() {
+    const nextIndex = tutorialSeedIndex + 1
+    if (nextIndex >= tutorialSeeds.length) {
+      gameActive = false
+      updateUI()
+      alert('Tutorial complete! You cleared all 5 puzzles.')
+      navigate('/')
+      return
+    }
+    const ok = startTutorialLevel(nextIndex)
+    if (!ok) {
+      gameActive = false
+      updateUI()
+      alert('Could not generate the next tutorial level.')
+    }
+  }
+
   function renderCanvas() {
     const state = playState.getState()
     let highlightCells = []
     if (
       gameActive &&
-      gameState.getTurn() === 'player' &&
       gameState.getActionPoints() >= 1
     ) {
       const playerPos = gameState.getPlayerPosition()
@@ -326,8 +511,6 @@ export function renderPlay(navigate) {
         energyEl.innerHTML = html
         energyEl.setAttribute('aria-label', `${count} action points`)
       }
-      const overlay = root.querySelector('#play-opponent-overlay')
-      if (overlay) overlay.hidden = true
       return
     }
 
@@ -337,7 +520,6 @@ export function renderPlay(navigate) {
     const maxHp = gameState.getPlayerMaxHealth()
     const dice = gameState.getDiceRoll()
 
-    const overlay = root.querySelector('#play-opponent-overlay')
     const iconCount = 6
     const heartsEl = root.querySelector('#play-hearts')
     if (heartsEl) {
@@ -375,12 +557,14 @@ export function renderPlay(navigate) {
     if (turn === 'opponent') {
       if (tapBtn) tapBtn.classList.remove('play-dice-tap-visible')
       indicator.textContent = 'Opponent turn'
-      if (overlay) overlay.hidden = false
     } else {
-      if (overlay) overlay.hidden = true
       const needsRoll = dice === 0
       if (tapBtn) tapBtn.classList.toggle('play-dice-tap-visible', needsRoll)
-      indicator.textContent = `Your turn - Endless ${endlessLevel}`
+      if (mode === 'tutorial') {
+        indicator.textContent = `Your turn - Tutorial ${tutorialSeedIndex + 1}/${tutorialSeeds.length || 5}`
+      } else {
+        indicator.textContent = `Your turn - Endless ${endlessLevel}`
+      }
     }
   }
 
@@ -397,38 +581,25 @@ export function renderPlay(navigate) {
   function endPlayerTurnNow() {
     if (!gameActive || gameState.getTurn() !== 'player') return
     gameState.endPlayerTurn()
+    runOpponentTurn()
     updateUI()
     renderCanvas()
-    const overlay = root.querySelector('#play-opponent-overlay')
-    if (overlay) overlay.hidden = false
-    const minOpponentMs = 600
-    const start = Date.now()
-    setTimeout(() => {
-      runOpponentTurn()
-      const elapsed = Date.now() - start
-      const remaining = Math.max(0, minOpponentMs - elapsed)
-      setTimeout(() => {
-        updateUI()
+    if (gameState.getPlayerHealth() <= 0) {
+      if (lastLevelData) {
+        playState.loadFromJson(lastLevelData)
         renderCanvas()
-        if (gameState.getPlayerHealth() <= 0) {
-          if (lastLevelData) {
-            playState.loadFromJson(lastLevelData)
-            renderCanvas()
-            startGame()
-          } else {
-            gameActive = false
-            updateUI()
-            alert('You lose!')
-          }
-        }
-      }, remaining)
-    }, 100)
+        startGame()
+      } else {
+        gameActive = false
+        updateUI()
+        alert('You lose!')
+      }
+    }
   }
 
-  function scheduleEndTurnIfNoAp() {
-    if (gameActive && gameState.getTurn() === 'player' && gameState.getActionPoints() === 0) {
-      setTimeout(endPlayerTurnNow, 1000)
-    }
+  function endTurnAfterPlayerAction() {
+    if (!gameActive || gameState.getTurn() !== 'player') return
+    setTimeout(endPlayerTurnNow, 150)
   }
 
   function isAttackableEntity(entity) {
@@ -474,7 +645,7 @@ export function renderPlay(navigate) {
       if (!attacked) return
       updateUI()
       renderCanvas()
-      scheduleEndTurnIfNoAp()
+      endTurnAfterPlayerAction()
       return
     }
 
@@ -501,9 +672,16 @@ export function renderPlay(navigate) {
           updateUI()
           renderCanvas()
           if (movedToExit) {
-            advanceEndlessMode()
+            completedPuzzles += 1
+            maybeAwardCardAfterPuzzle().then(() => {
+              if (mode === 'tutorial') {
+                advanceTutorialMode()
+              } else {
+                advanceEndlessMode()
+              }
+            })
           } else {
-            scheduleEndTurnIfNoAp()
+            endTurnAfterPlayerAction()
           }
         }
       }
@@ -538,8 +716,27 @@ export function renderPlay(navigate) {
     reader.readAsText(file)
   }
 
-  if (!startEndlessLevel(endlessLevel)) {
-    alert('Could not generate endless level.')
+  async function initializeMode() {
+    if (mode === 'tutorial') {
+      try {
+        tutorialSeeds = await loadTutorialSeeds()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Could not load tutorial seeds.'
+        alert(message)
+        navigate('/')
+        return
+      }
+      if (tutorialSeedIndex >= tutorialSeeds.length) tutorialSeedIndex = 0
+      const ok = startTutorialLevel(tutorialSeedIndex)
+      if (!ok) {
+        alert('Could not generate tutorial level.')
+        navigate('/')
+      }
+      return
+    }
+    if (!startEndlessLevel(endlessLevel)) {
+      alert('Could not generate endless level.')
+    }
   }
 
   root.querySelector('#play-dice-tap').addEventListener('click', () => {
@@ -551,6 +748,8 @@ export function renderPlay(navigate) {
   })
 
   renderCanvas()
+  renderActionSlots()
   updateUI()
+  initializeMode()
   return root
 }

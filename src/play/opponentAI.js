@@ -116,8 +116,12 @@ function isValidDiagonalDestination(fromRow, fromCol, toRow, toCol) {
   const colStep = Math.sign(toCol - fromCol)
   const steps = Math.abs(toRow - fromRow)
   for (let i = 1; i <= steps; i++) {
+    const prevRow = fromRow + rowStep * (i - 1)
+    const prevCol = fromCol + colStep * (i - 1)
     const r = fromRow + rowStep * i
     const c = fromCol + colStep * i
+    // Prevent diagonal movement through tight obstacle corners.
+    if (isObstacleCell(prevRow, c) && isObstacleCell(r, prevCol)) return false
     // Intermediate cells and destination must be passable for sliding movement.
     if (i === steps) {
       if (!isOpenMovementCell(r, c)) return false
@@ -134,6 +138,12 @@ function isOpenMovementCell(row, col) {
   const grid = playState.getState()
   const cell = grid[row]?.[col]
   return Boolean(cell && cell.base === 'movement' && cell.entity == null)
+}
+
+function isObstacleCell(row, col) {
+  const grid = playState.getState()
+  const cell = grid[row]?.[col]
+  return Boolean(cell && cell.base === 'obstacle')
 }
 
 function manhattan(r1, c1, r2, c2) {

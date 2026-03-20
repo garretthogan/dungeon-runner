@@ -37,9 +37,10 @@ function render(path) {
   }
 }
 
-export function navigate(path) {
+export function navigate(path, options = {}) {
   const normalized = path === '' || path === '/' ? '/' : path.replace(/\/$/, '')
-  const url = fullPath(normalized)
+  const hash = options.hash ? `#${options.hash}` : ''
+  const url = `${fullPath(normalized)}${hash}`
   history.pushState({ path: normalized }, '', url)
   render(normalized)
 }

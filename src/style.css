@@ -701,4 +701,111 @@ button:focus-visible {
   aspect-ratio: 3 / 4;
   min-height: 0;
   box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+.play-action-slot.play-action-slot-filled {
+  border-style: solid;
+}
+.play-action-card {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--dark-blue);
+  background-color: var(--dusk-blue);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.3rem;
+  box-sizing: border-box;
+}
+.play-action-card-icon {
+  width: 65%;
+  max-height: 2.1rem;
+  object-fit: contain;
+}
+.play-action-card-name {
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--lighter-blue);
+}
+.play-action-card-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+.play-action-card-cost-icon {
+  width: 0.8rem;
+  height: auto;
+  display: block;
+}
+.play-card-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 38, 95, 0.85);
+}
+.play-card-modal-backdrop[hidden] {
+  display: none;
+}
+.play-card-modal {
+  width: min(420px, 100%);
+  border: 2px solid var(--dark-blue);
+  background: var(--dusk-blue);
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.play-card-modal-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.15rem;
+  color: var(--lighter-blue);
+}
+.play-card-modal-subtitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: var(--lighter-blue);
+}
+.play-card-choice-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.play-card-choice-btn {
+  border: 1px solid var(--dark-blue);
+  background: var(--dusk-blue);
+  min-height: 8rem;
+  padding: 0.6rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+}
+.play-card-choice-icon {
+  width: 72%;
+  max-height: 3rem;
+  object-fit: contain;
+}
+.play-card-choice-name {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+.play-card-choice-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+}
+.play-card-choice-cost-icon {
+  width: 0.95rem;
+  height: auto;
+  display: block;
 }
