@@ -57,7 +57,7 @@ export function getNextStepToward(grid, fromRow, fromCol, toRow, toCol) {
 
 /**
  * All cells reachable from (fromRow, fromCol) in at most maxSteps steps.
- * Only movement tiles; cell must be empty, exit, or collectible (can step onto exit or collectible).
+ * Only movement tiles; cell must be empty or exit (can step onto exit).
  * Does not include the starting cell.
  */
 export function getReachableCells(grid, fromRow, fromCol, maxSteps) {
@@ -77,7 +77,7 @@ export function getReachableCells(grid, fromRow, fromCol, maxSteps) {
       if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue
       const cell = grid[nr]?.[nc]
       if (cell?.base !== 'movement') continue
-      if (cell.entity != null && cell.entity !== 'exit' && cell.entity !== 'collectible') continue
+      if (cell.entity != null && cell.entity !== 'exit') continue
       const k = `${nr},${nc}`
       if (visited.has(k)) continue
       visited.add(k)

@@ -7,7 +7,7 @@ const TOOLS = [
   { id: 'player', label: 'Player start' },
   { id: 'enemy', label: 'Enemy start' },
   { id: 'exit', label: 'Exit' },
-  { id: 'collectible', label: 'Collectible' },
+  { id: 'collectible', label: 'Purple enemy' },
   { id: 'eraser', label: 'Eraser' },
 ]
 

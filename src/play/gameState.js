@@ -81,7 +81,7 @@ export function movePlayer(fromRow, fromCol, toRow, toCol) {
   const grid = playState.getState()
   const cell = grid[toRow]?.[toCol]
   if (!cell || cell.base !== 'movement') return false
-  if (cell.entity != null && cell.entity !== 'exit' && cell.entity !== 'collectible') return false
+  if (cell.entity != null && cell.entity !== 'exit') return false
   playState.setCell(fromRow, fromCol, { entity: null })
   playState.setCell(toRow, toCol, { entity: 'player' })
   return true

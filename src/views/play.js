@@ -6,13 +6,14 @@ import { runOpponentTurn } from '../play/opponentAI.js'
 import { getReachableCells, getNextStepToward } from '../play/pathfinding.js'
 
 const DAMAGE_INDICATOR_MS = 1200
+const GRID_SIZE = 8
 
 const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/'
 
 export function renderPlay(navigate) {
-  let clickMode = null
   let gameActive = false
   let lastLevelData = null
+  let endlessLevel = 1
 
   const root = document.createElement('div')
   root.className = 'view view-play'
@@ -101,6 +102,147 @@ export function renderPlay(navigate) {
   canvas.id = 'play-canvas'
   canvasWrap.innerHTML = ''
   canvasWrap.appendChild(canvas)
+
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+
+  function shuffle(items) {
+    const arr = [...items]
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const tmp = arr[i]
+      arr[i] = arr[j]
+      arr[j] = tmp
+    }
+    return arr
+  }
+
+  function cellKey(row, col) {
+    return `${row},${col}`
+  }
+
+  function hasPath(gridData, start, goal) {
+    const queue = [{ row: start.row, col: start.col }]
+    const visited = new Set([cellKey(start.row, start.col)])
+    const dirs = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]
+    while (queue.length > 0) {
+      const cur = queue.shift()
+      if (cur.row === goal.row && cur.col === goal.col) return true
+      for (const [dr, dc] of dirs) {
+        const nr = cur.row + dr
+        const nc = cur.col + dc
+        if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) continue
+        const cell = gridData[nr]?.[nc]
+        if (!cell || cell.base !== 'movement') continue
+        const key = cellKey(nr, nc)
+        if (visited.has(key)) continue
+        visited.add(key)
+        queue.push({ row: nr, col: nc })
+      }
+    }
+    return false
+  }
+
+  function createEndlessLevel(levelNumber) {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const gridData = Array.from({ length: GRID_SIZE }, () =>
+        Array.from({ length: GRID_SIZE }, () => ({ base: 'movement', entity: null }))
+      )
+
+      const allCells = []
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          allCells.push({ row, col })
+        }
+      }
+
+      const playerCell = allCells[randomInt(0, allCells.length - 1)]
+      const farCells = allCells.filter(
+        (c) => Math.abs(c.row - playerCell.row) + Math.abs(c.col - playerCell.col) >= 6
+      )
+      if (farCells.length === 0) continue
+      const exitCell = farCells[randomInt(0, farCells.length - 1)]
+
+      const reserved = new Set([cellKey(playerCell.row, playerCell.col), cellKey(exitCell.row, exitCell.col)])
+      const obstacleCount = Math.min(22, 8 + levelNumber)
+      let placedObstacles = 0
+      for (const c of shuffle(allCells)) {
+        const key = cellKey(c.row, c.col)
+        if (reserved.has(key)) continue
+        if (placedObstacles >= obstacleCount) break
+        if (gridData[c.row][c.col].base === 'obstacle') continue
+        gridData[c.row][c.col].base = 'obstacle'
+        if (!hasPath(gridData, playerCell, exitCell)) {
+          gridData[c.row][c.col].base = 'movement'
+        } else {
+          placedObstacles += 1
+        }
+      }
+
+      if (!hasPath(gridData, playerCell, exitCell)) continue
+
+      gridData[playerCell.row][playerCell.col].entity = 'player'
+      gridData[exitCell.row][exitCell.col].entity = 'exit'
+
+      const freeCells = shuffle(
+        allCells.filter((c) => {
+          const cell = gridData[c.row][c.col]
+          return cell.base === 'movement' && cell.entity == null
+        })
+      )
+
+      const redCount = Math.min(8, 2 + Math.floor(levelNumber / 2))
+      const purpleCount = Math.min(8, 1 + Math.floor(levelNumber / 3))
+      let idx = 0
+      for (let i = 0; i < redCount && idx < freeCells.length; i++, idx++) {
+        const c = freeCells[idx]
+        gridData[c.row][c.col].entity = 'enemy'
+      }
+      for (let i = 0; i < purpleCount && idx < freeCells.length; i++, idx++) {
+        const c = freeCells[idx]
+        gridData[c.row][c.col].entity = 'collectible'
+      }
+
+      return {
+        version: 1,
+        name: `Endless ${levelNumber}`,
+        dimensions: { rows: GRID_SIZE, cols: GRID_SIZE },
+        createdAt: new Date().toISOString(),
+        grid: gridData,
+      }
+    }
+    return null
+  }
+
+  function startLevelData(data) {
+    if (!data || !playState.loadFromJson(data)) return false
+    lastLevelData = data
+    renderCanvas()
+    startGame()
+    return true
+  }
+
+  function startEndlessLevel(levelNumber) {
+    const levelData = createEndlessLevel(levelNumber)
+    if (!levelData) return false
+    return startLevelData(levelData)
+  }
+
+  function advanceEndlessMode() {
+    endlessLevel += 1
+    const ok = startEndlessLevel(endlessLevel)
+    if (!ok) {
+      gameActive = false
+      updateUI()
+      alert('Could not generate the next endless level.')
+    }
+  }
 
   function renderCanvas() {
     const state = playState.getState()
@@ -232,10 +374,7 @@ export function renderPlay(navigate) {
       if (overlay) overlay.hidden = true
       const needsRoll = dice === 0
       if (tapBtn) tapBtn.classList.toggle('play-dice-tap-visible', needsRoll)
-      indicator.textContent = 'Your turn'
-      if (ap === 0) {
-        clickMode = null
-      }
+      indicator.textContent = `Your turn - Endless ${endlessLevel}`
     }
   }
 
@@ -251,7 +390,6 @@ export function renderPlay(navigate) {
 
   function endPlayerTurnNow() {
     if (!gameActive || gameState.getTurn() !== 'player') return
-    clickMode = null
     gameState.endPlayerTurn()
     updateUI()
     renderCanvas()
@@ -287,6 +425,30 @@ export function renderPlay(navigate) {
     }
   }
 
+  function isAttackableEntity(entity) {
+    return entity === 'enemy' || entity === 'collectible'
+  }
+
+  function attackTarget(row, col, entity) {
+    if (!gameState.spendPoints(1)) return false
+    if (entity === 'enemy') {
+      const enemy = gameState.getEnemies().find((e) => e.row === row && e.col === col)
+      const maxHp = enemy?.maxHealth ?? 3
+      const healthBefore = enemy?.health ?? 0
+      gameState.damageEnemy(row, col, 1)
+      const remaining = Math.max(0, healthBefore - 1)
+      showDamageIndicator(row, col, remaining, maxHp)
+      return true
+    }
+    if (entity === 'collectible') {
+      // Purple-dot enemies are currently represented as collectible entities in level data.
+      playState.setCell(row, col, { entity: null })
+      showDamageIndicator(row, col, 0, 1)
+      return true
+    }
+    return false
+  }
+
   function onCellClick(row, col) {
     if (!gameActive || gameState.getTurn() !== 'player') return
     const playerPos = gameState.getPlayerPosition()
@@ -297,14 +459,13 @@ export function renderPlay(navigate) {
 
     const ap = gameState.getActionPoints()
 
-    if (clickMode === 'attack' && ap >= 1 && gameState.isAdjacent(playerPos.row, playerPos.col, row, col) && cell.entity === 'enemy') {
-      const enemy = gameState.getEnemies().find((e) => e.row === row && e.col === col)
-      const maxHp = enemy?.maxHealth ?? 3
-      const healthBefore = enemy?.health ?? 0
-      if (!gameState.spendPoints(1)) return
-      gameState.damageEnemy(row, col, 1)
-      const remaining = Math.max(0, healthBefore - 1)
-      showDamageIndicator(row, col, remaining, maxHp)
+    if (
+      ap >= 1 &&
+      gameState.isAdjacent(playerPos.row, playerPos.col, row, col) &&
+      isAttackableEntity(cell.entity)
+    ) {
+      const attacked = attackTarget(row, col, cell.entity)
+      if (!attacked) return
       updateUI()
       renderCanvas()
       scheduleEndTurnIfNoAp()
@@ -330,15 +491,11 @@ export function renderPlay(navigate) {
         if (next && gameState.spendPoints(1)) {
           const destCell = gridData[next.row]?.[next.col]
           const movedToExit = destCell?.entity === 'exit'
-          const movedToCollectible = destCell?.entity === 'collectible'
           gameState.movePlayer(playerPos.row, playerPos.col, next.row, next.col)
-          if (movedToCollectible) gameState.addActionPoints(1)
           updateUI()
           renderCanvas()
           if (movedToExit) {
-            gameActive = false
-            updateUI()
-            alert('You win!')
+            advanceEndlessMode()
           } else {
             scheduleEndTurnIfNoAp()
           }
@@ -375,20 +532,9 @@ export function renderPlay(navigate) {
     reader.readAsText(file)
   }
 
-  function loadDefaultLevel() {
-    fetch(`${baseUrl}levels/level-1.json`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && playState.loadFromJson(data)) {
-          lastLevelData = data
-          renderCanvas()
-          startGame()
-        }
-      })
-      .catch(() => {})
+  if (!startEndlessLevel(endlessLevel)) {
+    alert('Could not generate endless level.')
   }
-
-  loadDefaultLevel()
 
   root.querySelector('#play-dice-tap').addEventListener('click', () => {
     if (!gameActive || gameState.getTurn() !== 'player' || gameState.getDiceRoll() !== 0) return

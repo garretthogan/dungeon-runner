@@ -3,7 +3,7 @@ const ROWS = 8
 export const CELL_SIZE = 48
 const CELL_RADIUS = 0
 
-/* Palette: dark 06265F, second lightest blue 42588B, lightest 8ABFFF, enemy FF92AC, player/exit 8EFDB0, collectible CE8FFF */
+/* Palette: dark 06265F, second lightest blue 42588B, lightest 8ABFFF, enemy FF92AC, player/exit 8EFDB0, purple enemy CE8FFF */
 const COLORS = {
   movement: '#42588B',
   movementHighlight: '#8ABFFF',
@@ -125,10 +125,10 @@ function drawCollectible(ctx, x, y, size) {
 function drawMoveHighlight(ctx, x, y, size) {
   const cx = x + size / 2
   const cy = y + size / 2
-  const r = 10
-  ctx.fillStyle = COLORS.moveHighlight
-  ctx.strokeStyle = COLORS.gridLine
-  ctx.lineWidth = 2
+  const r = 7
+  ctx.fillStyle = 'rgba(142, 253, 176, 0.72)'
+  ctx.strokeStyle = 'rgba(6, 38, 95, 0.7)'
+  ctx.lineWidth = 1.5
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.fill()
