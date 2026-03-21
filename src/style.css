@@ -343,16 +343,20 @@ button:focus-visible {
 
 /* --- Play (mockup: header, puzzle stage, status bar, action cards) --- */
 .view-play {
-  padding: 1.5rem 0.5rem 0.5rem 0.5rem;
+  padding: 1.5rem 0.5rem 12px 0.5rem;
   max-width: 420px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
   background-color: var(--dusk-blue);
+  min-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
 }
 @media (min-width: 480px) {
   .view-play {
-    padding: 1rem;
+    padding: 1rem 1rem 12px 1rem;
+    min-height: calc(100vh - 4rem);
   }
 }
 .play-header-spacer {
@@ -394,11 +398,9 @@ button:focus-visible {
 }
 .play-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
   background-color: var(--dusk-blue);
   border-radius: 0;
 }
@@ -407,10 +409,19 @@ button:focus-visible {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   overflow: hidden;
-  padding-right: 0.5rem;
+}
+.play-puzzle-counter {
+  display: block;
+  width: 100%;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--lighter-blue);
+  text-align: center;
 }
 .play-title .app-logo {
   max-height: 3.25rem;
@@ -418,9 +429,7 @@ button:focus-visible {
   object-fit: contain;
 }
 @media (max-width: 599px) {
-  .play-title {
-    padding-right: 2.5rem;
-  }
+
   .play-title .app-logo {
     max-width: 100%;
     max-height: 2.5rem;
@@ -470,11 +479,13 @@ button:focus-visible {
 .play-stage-wrap {
   background-color: var(--dusk-blue);
   border-radius: 0;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   position: relative;
   max-width: 100%;
   box-sizing: border-box;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 @media (min-width: 480px) {
   .play-stage-wrap {
@@ -482,36 +493,56 @@ button:focus-visible {
   }
 }
 .play-stage-inner {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   align-items: stretch;
   gap: 0.75rem;
   max-width: 100%;
+  flex: 1;
 }
 .play-bottom-bar {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
-.play-dice-wrap {
-  position: relative;
-  width: 5rem;
-  height: 5rem;
-  min-width: 5rem;
-  min-height: 5rem;
-}
-.play-hearts {
+.play-dice-column {
   display: flex;
   flex-direction: row;
   align-items: center;
+  gap: 0.65rem;
+}
+.play-extra-dice {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.2rem;
+  z-index: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 0;
+  pointer-events: none;
+}
+.play-dice-wrap {
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+  min-width: 4rem;
+  min-height: 4rem;
+}
+.play-hearts {
+  display: flex;
+  order: -1;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   gap: 0.2rem;
-  flex-wrap: wrap;
 }
 .play-heart {
-  width: 2.15rem;
+  width: 1.2rem;
   height: auto;
   display: block;
 }
@@ -522,6 +553,9 @@ button:focus-visible {
   justify-content: center;
   gap: 0.2rem;
   flex-wrap: wrap;
+}
+.play-energy-top {
+  margin-bottom: 0.5rem;
 }
 .play-energy-icon {
   width: 1.15rem;
@@ -560,14 +594,26 @@ button:focus-visible {
 }
 .play-dice {
   position: relative;
-  width: 5rem;
-  height: 5rem;
-  min-width: 5rem;
-  min-height: 5rem;
+  width: 4rem;
+  height: 4rem;
+  min-width: 4rem;
+  min-height: 4rem;
   background-color: var(--dark-blue);
   border: 2px solid var(--dark-blue);
   border-radius: 8px;
   box-sizing: border-box;
+}
+.play-dice.play-dice-bonus,
+.play-dice.play-dice-compact {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border-width: 1px;
+}
+.play-dice.play-dice-bonus .play-dice-pip,
+.play-dice.play-dice-compact .play-dice-pip {
+  font-size: 0.72rem;
 }
 .play-dice-pip {
   position: absolute;
@@ -580,7 +626,7 @@ button:focus-visible {
   top: 0;
   transform: translate(-50%, -50%);
   color: var(--lighter-blue);
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   line-height: 1;
   opacity: 0;
   font-weight: 700;
@@ -637,16 +683,24 @@ button:focus-visible {
 }
 .play-canvas-wrap {
   position: relative;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
   padding: 0;
   max-width: 100%;
   box-sizing: border-box;
   background-color: var(--dusk-blue);
   border-radius: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .play-canvas-wrap .puzzle-canvas {
   border-radius: 0;
   border: 2px solid var(--dark-blue);
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
 }
 .play-damage-indicator {
   position: absolute;
@@ -688,14 +742,16 @@ button:focus-visible {
 }
 .play-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, auto);
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: auto;
+  gap: 0.35rem;
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
   max-width: 100%;
 }
 .play-action-slot {
-  border: 2px dotted var(--dark-blue);
+  border: 2px solid var(--dark-blue);
   border-radius: 12px;
   background: transparent;
   aspect-ratio: 3 / 4;
@@ -709,34 +765,75 @@ button:focus-visible {
 .play-action-slot.play-action-slot-filled {
   border-style: solid;
 }
+.play-action-slot.play-action-slot-available {
+  cursor: pointer;
+}
+.play-action-slot.play-action-slot-active {
+  border-color: var(--light-green);
+  box-shadow: 0 0 10px rgba(142, 253, 176, 0.4);
+}
+.play-action-slot.play-action-slot-available .play-action-card:hover {
+  background-color: var(--glaucous);
+}
 .play-action-card {
   width: 100%;
   height: 100%;
-  border: 1px solid var(--dark-blue);
+  border: 0;
   background-color: var(--dusk-blue);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.35rem 0.3rem;
+  justify-content: flex-start;
+  gap: 0.18rem;
+  padding: 0.25rem 0.25rem 0.2rem;
   box-sizing: border-box;
 }
 .play-action-card-icon {
-  width: 65%;
-  max-height: 2.1rem;
+  width: 1.8rem;
+  height: 1.8rem;
   object-fit: contain;
+  flex: 0 0 1.8rem;
+}
+.play-card-dice-icon.play-dice {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--dark-blue);
+  border-radius: 6px;
+}
+.play-card-dice-icon.play-dice .play-dice-pip {
+  font-size: 0.42rem;
+}
+.play-card-dice-icon-extraroll.play-dice .play-dice-pip {
+  font-size: 0.36rem;
+}
+.play-card-dice-icon-slot.play-dice {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 1.8rem;
+}
+.play-card-dice-icon-choice.play-dice {
+  width: 2.25rem;
+  height: 2.25rem;
 }
 .play-action-card-name {
   font-size: 0.72rem;
-  line-height: 1;
+  line-height: 1.1;
   color: var(--lighter-blue);
+  width: 100%;
+  min-height: 0.8rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .play-action-card-cost {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
+  min-height: 0.8rem;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: center;
   font-size: 0.72rem;
-  line-height: 1;
+  line-height: 1.1;
 }
 .play-action-card-cost-icon {
   width: 0.8rem;

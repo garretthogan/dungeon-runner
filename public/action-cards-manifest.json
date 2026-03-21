@@ -1,0 +1,46 @@
+{
+  "cards": [
+    {
+      "id": "knight",
+      "name": "Knight",
+      "icon": "kknight-icon.png",
+      "cost": 2
+    },
+    {
+      "id": "queen",
+      "name": "Queen",
+      "icon": "queen-icon.png",
+      "cost": 4
+    },
+    {
+      "id": "rook",
+      "name": "Rook",
+      "icon": "rook-icon.png",
+      "cost": 3
+    },
+    {
+      "id": "freeze",
+      "name": "Freeze",
+      "icon": "energy-icon.svg",
+      "cost": 2
+    },
+    {
+      "id": "renew",
+      "name": "Renew",
+      "icon": "heart-icon.svg",
+      "cost": 3
+    },
+    {
+      "id": "shockwave",
+      "name": "Shock",
+      "icon": "energy-icon.svg",
+      "cost": 3
+    },
+    {
+      "id": "extraroll",
+      "name": "Extra Roll",
+      "icon": "",
+      "cost": 3
+    }
+  ]
+}

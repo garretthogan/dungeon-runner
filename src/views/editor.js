@@ -116,7 +116,7 @@ export function renderEditor(navigate) {
     const payload = {
       version: 1,
       name: 'Untitled level',
-      dimensions: { rows: 8, cols: 8 },
+      dimensions: { rows: 16, cols: 9 },
       createdAt: new Date().toISOString(),
       grid: state.map((row) =>
         row.map((cell) => ({ base: cell.base, entity: cell.entity }))

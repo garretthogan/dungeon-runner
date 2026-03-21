@@ -1,5 +1,5 @@
-const COLS = 8
-const ROWS = 8
+const COLS = 9
+const ROWS = 16
 export const CELL_SIZE = 48
 const CELL_RADIUS = 0
 const GRID_PIXEL_WIDTH = COLS * CELL_SIZE
@@ -91,7 +91,7 @@ function drawEnemy(ctx, x, y, size) {
   ctx.fill()
 }
 
-function drawExit(ctx, x, y, size) {
+function drawExit(ctx, x, y, size, showLabel = true) {
   let x1 = 0
   let y1 = 0
   let x2 = 0
@@ -159,18 +159,20 @@ function drawExit(ctx, x, y, size) {
   ctx.globalAlpha = 1
   ctx.shadowBlur = 0
   ctx.shadowColor = 'transparent'
-  ctx.fillStyle = COLORS.exitText
-  ctx.font = '700 12px system-ui, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('Exit', x + size / 2, y + size / 2)
+  if (showLabel) {
+    ctx.fillStyle = COLORS.exitText
+    ctx.font = '700 12px system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('Exit', x + size / 2, y + size / 2)
+  }
   ctx.restore()
 }
 
 function drawCollectible(ctx, x, y, size) {
   const cx = x + size / 2
   const cy = y + size / 2
-  const r = size / 4
+  const r = size / 3.2
   ctx.fillStyle = COLORS.collectible
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
@@ -180,14 +182,11 @@ function drawCollectible(ctx, x, y, size) {
 function drawMoveHighlight(ctx, x, y, size) {
   const cx = x + size / 2
   const cy = y + size / 2
-  const r = 7
-  ctx.fillStyle = 'rgba(142, 253, 176, 0.72)'
-  ctx.strokeStyle = 'rgba(6, 38, 95, 0.7)'
-  ctx.lineWidth = 1.5
+  const r = 5
+  ctx.fillStyle = 'rgba(142, 253, 176, 0.58)'
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.fill()
-  ctx.stroke()
 }
 
 export function render(canvas, state, options = {}) {
@@ -201,6 +200,7 @@ export function render(canvas, state, options = {}) {
   const highlightSet = options.highlightCells
     ? new Set(options.highlightCells.map((c) => `${c.row},${c.col}`))
     : null
+  const showExitLabel = options.showExitLabel !== false
 
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
@@ -216,7 +216,7 @@ export function render(canvas, state, options = {}) {
 
       if (cell.entity === 'player') drawPlayer(ctx, x, y, CELL_SIZE)
       else if (cell.entity === 'enemy') drawEnemy(ctx, x, y, CELL_SIZE)
-      else if (cell.entity === 'exit') drawExit(ctx, x, y, CELL_SIZE)
+      else if (cell.entity === 'exit') drawExit(ctx, x, y, CELL_SIZE, showExitLabel)
       else if (cell.entity === 'collectible') drawCollectible(ctx, x, y, CELL_SIZE)
 
       if (highlightSet && highlightSet.has(`${row},${col}`)) {

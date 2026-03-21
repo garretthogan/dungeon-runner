@@ -1,5 +1,5 @@
-const ROWS = 8
-const COLS = 8
+const ROWS = 16
+const COLS = 9
 
 function createEmptyCell() {
   return { base: 'movement', entity: null }

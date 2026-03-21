@@ -1,5 +1,5 @@
-const ROWS = 8
-const COLS = 8
+const ROWS = 16
+const COLS = 9
 
 const DIRS = [
   [0, -1],

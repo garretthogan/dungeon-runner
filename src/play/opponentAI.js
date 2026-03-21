@@ -11,6 +11,11 @@ import * as gameState from './gameState.js'
  * Call after gameState.endPlayerTurn(). Updates grid via playState and gameState.
  */
 export function runOpponentTurn() {
+  if (gameState.consumeOpponentFrozenTurn()) {
+    gameState.endOpponentTurn()
+    return
+  }
+
   const grid = playState.getState()
 
   const pieces = []
@@ -88,8 +93,7 @@ function movePurpleEnemy(fromRow, fromCol, playerRow, playerCol) {
 
   const best = pickHighestScoringTile(candidates, playerRow, playerCol)
   if (!best) return
-  playState.setCell(fromRow, fromCol, { entity: null })
-  playState.setCell(best.row, best.col, { entity: 'collectible' })
+  gameState.moveCollectible(fromRow, fromCol, best.row, best.col)
 }
 
 function pickHighestScoringTile(candidates, playerRow, playerCol) {
