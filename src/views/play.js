@@ -113,6 +113,13 @@ export function renderPlay(navigate) {
   let moveAnimations = []
   let moveAnimationProgress = 1
   let moveAnimationFrameId = 0
+  const supportsHaptics =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.vibrate === 'function' &&
+    ((typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 0) ||
+      (typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches))
   const hashParams = parseHashParams()
   const mode = hashParams.get('mode') === 'tutorial' ? 'tutorial' : 'endless'
   let tutorialSeeds = []
@@ -841,6 +848,17 @@ export function renderPlay(navigate) {
     moveAnimationFrameId = requestAnimationFrame(step)
   }
 
+  function triggerHaptic(type) {
+    if (!supportsHaptics) return
+    if (type === 'attack') {
+      navigator.vibrate([14, 26, 18])
+      return
+    }
+    if (type === 'move') {
+      navigator.vibrate(12)
+    }
+  }
+
   function setDiePips(diceEl, rolledValue, remainingValue) {
     if (!diceEl) return
     const pipMap = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] }
@@ -1013,12 +1031,14 @@ export function renderPlay(navigate) {
       gameState.damageEnemy(row, col, 1)
       const remaining = Math.max(0, healthBefore - 1)
       showDamageIndicator(row, col, remaining, maxHp)
+      triggerHaptic('attack')
       return true
     }
     if (entity === 'collectible') {
       // Purple-dot enemies are currently represented as collectible entities in level data.
       playState.setCell(row, col, { entity: null })
       showDamageIndicator(row, col, 0, 1)
+      triggerHaptic('attack')
       return true
     }
     return false
@@ -1034,6 +1054,7 @@ export function renderPlay(navigate) {
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
       showDamageIndicator(row, col, 0, maxHp)
+      triggerHaptic('attack')
       return 'action'
     }
     if (cell.entity === 'collectible') {
@@ -1042,18 +1063,21 @@ export function renderPlay(navigate) {
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
       showDamageIndicator(row, col, 0, 1)
+      triggerHaptic('attack')
       return 'action'
     }
     if (cell.entity === 'exit') {
       gameState.movePlayer(playerPos.row, playerPos.col, row, col)
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
+      triggerHaptic('move')
       return 'exit'
     }
     if (cell.entity == null) {
       gameState.movePlayer(playerPos.row, playerPos.col, row, col)
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
+      triggerHaptic('move')
       return 'action'
     }
     return false
@@ -1131,6 +1155,7 @@ export function renderPlay(navigate) {
           gameState.movePlayer(playerPos.row, playerPos.col, next.row, next.col)
           startMoveAnimationsFromGameState()
           hasPlayerMovedThisPuzzle = true
+          triggerHaptic('move')
           updateUI()
           renderCanvas()
           if (movedToExit) {
