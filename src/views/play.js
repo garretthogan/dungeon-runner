@@ -134,6 +134,7 @@ export function renderPlay(navigate) {
   let completedPuzzles = 0
   let hasPlayerMovedThisPuzzle = false
   const selectedActionCards = []
+  let pendingRewardCard = null
   let actionCardOptions = []
   let activeActionCardIndex = -1
   let moveAnimations = []
@@ -271,6 +272,11 @@ export function renderPlay(navigate) {
     const shuffled = shuffle(actionCardOptions)
     for (let i = 0; i < shuffled.length && selectedActionCards.length < ACTION_SLOT_COUNT; i++) {
       selectedActionCards.push({ ...shuffled[i] })
+    }
+    if (pendingRewardCard && selectedActionCards.length > 0) {
+      const replaceIdx = randomInt(0, selectedActionCards.length - 1)
+      selectedActionCards[replaceIdx] = { ...pendingRewardCard }
+      pendingRewardCard = null
     }
     activeActionCardIndex = -1
     renderActionSlots()
@@ -643,9 +649,8 @@ export function renderPlay(navigate) {
         const btn = e.target.closest('[data-card-id]')
         if (!btn) return
         const picked = actionCardOptions.find((card) => card.id === btn.getAttribute('data-card-id'))
-        if (picked && selectedActionCards.length < ACTION_SLOT_COUNT) {
-          selectedActionCards.push({ ...picked })
-          renderActionSlots()
+        if (picked) {
+          pendingRewardCard = { ...picked }
         }
         cardChoiceList.removeEventListener('click', onClick)
         cardModalBackdrop.hidden = true
