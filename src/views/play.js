@@ -808,8 +808,9 @@ export function renderPlay(navigate) {
         randomFn
       )
 
-      const redCount = Math.min(8, 2 + Math.floor(levelNumber / 2))
-      const purpleCount = Math.min(8, 1 + Math.floor(levelNumber / 3))
+      const targetRedByLevel = 1 + Math.floor(Math.max(0, levelNumber - 1) / 4)
+      const redCount = Math.min(3, Math.max(1, targetRedByLevel), Math.floor(freeCells.length / 3))
+      const purpleCount = redCount * 2
       let idx = 0
       for (let i = 0; i < redCount && idx < freeCells.length; i++, idx++) {
         const c = freeCells[idx]
