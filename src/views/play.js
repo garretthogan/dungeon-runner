@@ -192,6 +192,14 @@ export function renderPlay(navigate) {
         <div class="play-card-choice-list" id="play-card-choice-list"></div>
       </div>
     </div>
+    <div class="play-game-over-backdrop" id="play-game-over-backdrop" hidden>
+      <div class="play-game-over-modal" role="dialog" aria-modal="true" aria-labelledby="play-game-over-title">
+        <img src="${baseUrl}GameOver.svg" alt="Game Over" class="play-game-over-image" />
+        <h2 class="play-game-over-title" id="play-game-over-title">Game Over</h2>
+        <p class="play-game-over-subtitle">You were defeated.</p>
+        <button type="button" class="play-game-over-restart" id="play-game-over-restart">Restart</button>
+      </div>
+    </div>
   `
 
   const gearBtn = root.querySelector('#play-gear')
@@ -227,6 +235,8 @@ export function renderPlay(navigate) {
   else canvasWrap.prepend(canvas)
   const cardModalBackdrop = root.querySelector('#play-card-modal-backdrop')
   const cardChoiceList = root.querySelector('#play-card-choice-list')
+  const gameOverBackdrop = root.querySelector('#play-game-over-backdrop')
+  const gameOverRestartBtn = root.querySelector('#play-game-over-restart')
   const actionSlotsWrap = root.querySelector('.play-actions')
 
   function initializeRandomActionCards() {
@@ -238,6 +248,14 @@ export function renderPlay(navigate) {
     activeActionCardIndex = -1
     renderActionSlots()
     renderCanvas()
+  }
+
+  function hideGameOverModal() {
+    if (gameOverBackdrop) gameOverBackdrop.hidden = true
+  }
+
+  function showGameOverModal() {
+    if (gameOverBackdrop) gameOverBackdrop.hidden = false
   }
 
   function getActiveActionCard() {
@@ -514,6 +532,18 @@ export function renderPlay(navigate) {
       const slotIdx = Number.parseInt(slot.getAttribute('data-slot-index') || '', 10)
       if (!Number.isInteger(slotIdx)) return
       activateCard(slotIdx)
+    })
+  }
+  if (gameOverRestartBtn) {
+    gameOverRestartBtn.addEventListener('click', () => {
+      if (!lastLevelData) {
+        navigate('/')
+        return
+      }
+      hideGameOverModal()
+      playState.loadFromJson(lastLevelData)
+      renderCanvas()
+      startGame()
     })
   }
 
@@ -985,6 +1015,7 @@ export function renderPlay(navigate) {
       alert('Level has no player.')
       return
     }
+    hideGameOverModal()
     initializeRandomActionCards()
     hasPlayerMovedThisPuzzle = false
     gameActive = true
@@ -1001,15 +1032,9 @@ export function renderPlay(navigate) {
     updateUI()
     renderCanvas()
     if (gameState.getPlayerHealth() <= 0) {
-      if (lastLevelData) {
-        playState.loadFromJson(lastLevelData)
-        renderCanvas()
-        startGame()
-      } else {
-        gameActive = false
-        updateUI()
-        alert('You lose!')
-      }
+      gameActive = false
+      updateUI()
+      showGameOverModal()
     }
   }
 

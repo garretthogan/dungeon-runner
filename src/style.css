@@ -915,3 +915,43 @@ button:focus-visible {
   height: auto;
   display: block;
 }
+.play-game-over-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 38, 95, 0.85);
+}
+.play-game-over-backdrop[hidden] {
+  display: none;
+}
+.play-game-over-modal {
+  width: min(320px, 100%);
+  border: 2px solid var(--dark-blue);
+  background: var(--dusk-blue);
+  padding: 1rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+.play-game-over-image {
+  display: block;
+  width: min(220px, 85%);
+  height: auto;
+  margin: 0 auto 0.5rem auto;
+}
+.play-game-over-title {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.15rem;
+  color: var(--lighter-blue);
+}
+.play-game-over-subtitle {
+  margin: 0 0 0.85rem 0;
+  font-size: 0.9rem;
+  color: var(--lighter-blue);
+}
+.play-game-over-restart {
+  min-width: 8rem;
+}
