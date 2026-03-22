@@ -193,11 +193,11 @@ export function renderPlay(navigate) {
       </div>
     </div>
     <div class="play-game-over-backdrop" id="play-game-over-backdrop" hidden>
-      <div class="play-game-over-modal" role="dialog" aria-modal="true" aria-labelledby="play-game-over-title">
+      <div class="play-game-over-message">
         <img src="${baseUrl}GameOver.svg" alt="Game Over" class="play-game-over-image" />
         <p class="play-game-over-subtitle">get good...</p>
-        <button type="button" class="play-game-over-restart" id="play-game-over-restart">Restart</button>
       </div>
+      <p class="play-game-over-level" id="play-game-over-level">YOU MADE IT TO LEVEL: 1</p>
     </div>
   `
 
@@ -235,7 +235,6 @@ export function renderPlay(navigate) {
   const cardModalBackdrop = root.querySelector('#play-card-modal-backdrop')
   const cardChoiceList = root.querySelector('#play-card-choice-list')
   const gameOverBackdrop = root.querySelector('#play-game-over-backdrop')
-  const gameOverRestartBtn = root.querySelector('#play-game-over-restart')
   const actionSlotsWrap = root.querySelector('.play-actions')
 
   function initializeRandomActionCards() {
@@ -254,6 +253,11 @@ export function renderPlay(navigate) {
   }
 
   function showGameOverModal() {
+    const gameOverLevelEl = root.querySelector('#play-game-over-level')
+    if (gameOverLevelEl) {
+      const reachedLevel = Math.max(1, completedPuzzles + 1)
+      gameOverLevelEl.textContent = `YOU MADE IT TO LEVEL: ${reachedLevel}`
+    }
     if (gameOverBackdrop) gameOverBackdrop.hidden = false
   }
 
@@ -533,8 +537,8 @@ export function renderPlay(navigate) {
       activateCard(slotIdx)
     })
   }
-  if (gameOverRestartBtn) {
-    gameOverRestartBtn.addEventListener('click', () => {
+  if (gameOverBackdrop) {
+    gameOverBackdrop.addEventListener('click', () => {
       if (!lastLevelData) {
         navigate('/')
         return

@@ -916,42 +916,46 @@ button:focus-visible {
   display: block;
 }
 .play-game-over-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   padding: 1rem;
-  background: rgba(6, 38, 95, 0.85);
+  background: rgba(6, 38, 95, 0.75);
+  cursor: pointer;
 }
 .play-game-over-backdrop[hidden] {
   display: none;
 }
-.play-game-over-modal {
-  width: min(320px, 100%);
-  border: 2px solid var(--dark-blue);
-  background: var(--dusk-blue);
-  padding: 1rem;
-  box-sizing: border-box;
-  text-align: center;
+.play-game-over-message {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -100%);
+  width: min(260px, 90%);
 }
+
 .play-game-over-image {
   display: block;
   width: min(220px, 85%);
   height: auto;
   margin: 0 auto 0.5rem auto;
 }
-.play-game-over-title {
-  margin: 0 0 0.35rem 0;
-  font-size: 1.15rem;
-  color: var(--lighter-blue);
-}
 .play-game-over-subtitle {
-  margin: 0 0 0.85rem 0;
+  margin: 0;
   font-size: 0.9rem;
-  color: var(--lighter-blue);
+  color: #9fd8ff;
+  text-align: center;
 }
-.play-game-over-restart {
-  min-width: 8rem;
+
+.play-game-over-level {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: 1.2rem;
+  color: #5ee87c;
+  text-align: center;
+  width: calc(100% - 2rem);
 }

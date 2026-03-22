@@ -116,7 +116,34 @@ function pickHighestScoringTile(candidates, playerRow, playerCol) {
 
 function scoreTileForEnemy(tileRow, tileCol, playerRow, playerCol) {
   // Higher score means better tile; closer to player scores higher.
-  return -manhattan(tileRow, tileCol, playerRow, playerCol)
+  const base = -manhattan(tileRow, tileCol, playerRow, playerCol)
+  const interceptBonus = scoreInterceptLane(tileRow, tileCol, playerRow, playerCol)
+  return base + interceptBonus
+}
+
+function scoreInterceptLane(tileRow, tileCol, playerRow, playerCol) {
+  const exit = playState.findEntity('exit')
+  if (!exit) return 0
+  // Favor tiles that lie in the rectangle corridor between player and exit.
+  // This encourages enemies to contest the player's likely path.
+  const minRow = Math.min(playerRow, exit.row)
+  const maxRow = Math.max(playerRow, exit.row)
+  const minCol = Math.min(playerCol, exit.col)
+  const maxCol = Math.max(playerCol, exit.col)
+
+  const inCorridor =
+    tileRow >= minRow &&
+    tileRow <= maxRow &&
+    tileCol >= minCol &&
+    tileCol <= maxCol
+  if (!inCorridor) return 0
+
+  // Extra preference for the central part of that corridor.
+  const centerRow = (playerRow + exit.row) / 2
+  const centerCol = (playerCol + exit.col) / 2
+  const centerDistance = Math.abs(tileRow - centerRow) + Math.abs(tileCol - centerCol)
+  const centerBonus = Math.max(0, 2 - centerDistance * 0.5)
+  return 2 + centerBonus
 }
 
 function isValidDiagonalDestination(fromRow, fromCol, toRow, toCol) {
