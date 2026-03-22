@@ -70,9 +70,11 @@ function moveRedEnemy(fromRow, fromCol, playerRow, playerCol) {
   }
 
   const best = pickHighestScoringTile(candidates, playerRow, playerCol)
-  if (best) {
-    gameState.moveEnemy(fromRow, fromCol, best.row, best.col)
-  }
+  if (!best) return
+  const currentScore = scoreTileForEnemy(fromRow, fromCol, playerRow, playerCol)
+  const bestScore = scoreTileForEnemy(best.row, best.col, playerRow, playerCol)
+  if (bestScore <= currentScore) return
+  gameState.moveEnemy(fromRow, fromCol, best.row, best.col)
 }
 
 function movePurpleEnemy(fromRow, fromCol, playerRow, playerCol) {
@@ -93,6 +95,9 @@ function movePurpleEnemy(fromRow, fromCol, playerRow, playerCol) {
 
   const best = pickHighestScoringTile(candidates, playerRow, playerCol)
   if (!best) return
+  const currentScore = scoreTileForEnemy(fromRow, fromCol, playerRow, playerCol)
+  const bestScore = scoreTileForEnemy(best.row, best.col, playerRow, playerCol)
+  if (bestScore <= currentScore) return
   gameState.moveCollectible(fromRow, fromCol, best.row, best.col)
 }
 
