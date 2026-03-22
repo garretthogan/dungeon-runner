@@ -21,7 +21,7 @@
     {
       "id": "freeze",
       "name": "Freeze",
-      "icon": "energy-icon.svg",
+      "icon": "freeze-icon.svg",
       "cost": 2
     },
     {
