@@ -7,6 +7,8 @@ import { getReachableCells, getNextStepToward } from '../play/pathfinding.js'
 
 const DAMAGE_INDICATOR_MS = 1200
 const MOVE_ANIMATION_MS = 170
+const LONGBOW_BEAM_MS = 240
+const LONGBOW_TRAIL_FRACTION = 0.2
 const GRID_ROWS = 16
 const GRID_COLS = 9
 const ACTION_SLOT_COUNT = 4
@@ -137,6 +139,8 @@ export function renderPlay(navigate) {
   let moveAnimations = []
   let moveAnimationProgress = 1
   let moveAnimationFrameId = 0
+  let longbowBeamAnimation = null
+  let longbowBeamFrameId = 0
   const supportsHaptics =
     typeof navigator !== 'undefined' &&
     typeof navigator.vibrate === 'function' &&
@@ -384,6 +388,39 @@ export function renderPlay(navigate) {
     return targets
   }
 
+  function getLongbowActionTargets(state, playerPos) {
+    if (!playerPos) return []
+    const targets = []
+    const directions = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+      [-1, -1],
+      [-1, 1],
+      [1, -1],
+      [1, 1],
+    ]
+    for (const [dr, dc] of directions) {
+      const pathCells = []
+      for (let step = 1; step <= 5; step++) {
+        const row = playerPos.row + dr * step
+        const col = playerPos.col + dc * step
+        if (row < 0 || row >= GRID_ROWS || col < 0 || col >= GRID_COLS) break
+        const cell = state[row]?.[col]
+        if (!cell || cell.base !== 'movement') break
+        pathCells.push({ row, col })
+        if (cell.entity == null) continue
+        if (isAttackableEntity(cell.entity)) {
+          targets.push({ row, col, path: [...pathCells] })
+        }
+        // Any entity blocks line of sight beyond this point.
+        break
+      }
+    }
+    return targets
+  }
+
   function getActionTargetsByCard(cardId, state, playerPos) {
     if (cardId === 'knight') return getKnightActionTargets(state, playerPos)
     if (cardId === 'rook') {
@@ -406,6 +443,7 @@ export function renderPlay(navigate) {
         [1, 1],
       ])
     }
+    if (cardId === 'longbow') return getLongbowActionTargets(state, playerPos)
     return []
   }
 
@@ -514,7 +552,7 @@ export function renderPlay(navigate) {
       castInstantCard(slotIdx)
       return
     }
-    if (!['knight', 'rook', 'queen'].includes(card.id)) return
+    if (!['knight', 'rook', 'queen', 'longbow'].includes(card.id)) return
     if (slotIdx === activeActionCardIndex) {
       clearActiveActionCard()
       renderCanvas()
@@ -891,6 +929,65 @@ export function renderPlay(navigate) {
         ctx.fill()
       }
     }
+
+    if (longbowBeamAnimation) {
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      const t = Math.max(0, Math.min(1, longbowBeamAnimation.progress))
+      const fromX = (longbowBeamAnimation.fromCol + 0.5) * CELL_SIZE
+      const fromY = (longbowBeamAnimation.fromRow + 0.5) * CELL_SIZE
+      const toX = (longbowBeamAnimation.toCol + 0.5) * CELL_SIZE
+      const toY = (longbowBeamAnimation.toRow + 0.5) * CELL_SIZE
+      const dx = toX - fromX
+      const dy = toY - fromY
+      const headT = t
+      const tailT = Math.max(0, headT - LONGBOW_TRAIL_FRACTION)
+      const x1 = fromX + dx * tailT
+      const y1 = fromY + dy * tailT
+      const x2 = fromX + dx * headT
+      const y2 = fromY + dy * headT
+      const alpha = Math.max(0.35, 1 - t * 0.6)
+      ctx.save()
+      ctx.strokeStyle = `rgba(142, 253, 176, ${0.85 * alpha})`
+      ctx.lineWidth = 3
+      ctx.lineCap = 'round'
+      ctx.shadowColor = `rgba(142, 253, 176, ${0.7 * alpha})`
+      ctx.shadowBlur = 8
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.stroke()
+      ctx.restore()
+    }
+  }
+
+  function startLongbowBeamAnimation(fromRow, fromCol, toRow, toCol) {
+    if (longbowBeamFrameId) {
+      cancelAnimationFrame(longbowBeamFrameId)
+      longbowBeamFrameId = 0
+    }
+    longbowBeamAnimation = {
+      fromRow,
+      fromCol,
+      toRow,
+      toCol,
+      progress: 0,
+    }
+    const startTs = performance.now()
+    const step = (now) => {
+      const elapsed = now - startTs
+      if (!longbowBeamAnimation) return
+      longbowBeamAnimation.progress = Math.min(1, elapsed / LONGBOW_BEAM_MS)
+      renderCanvas()
+      if (longbowBeamAnimation.progress < 1) {
+        longbowBeamFrameId = requestAnimationFrame(step)
+      } else {
+        longbowBeamAnimation = null
+        longbowBeamFrameId = 0
+        renderCanvas()
+      }
+    }
+    longbowBeamFrameId = requestAnimationFrame(step)
   }
 
   function startMoveAnimationsFromGameState() {
@@ -1152,6 +1249,26 @@ export function renderPlay(navigate) {
     return false
   }
 
+  function executeLongbowAction(row, col, cell, playerPos) {
+    if (!isAttackableEntity(cell?.entity)) return false
+    startLongbowBeamAnimation(playerPos.row, playerPos.col, row, col)
+    if (cell.entity === 'enemy') {
+      const enemy = gameState.getEnemies().find((e) => e.row === row && e.col === col)
+      const maxHp = enemy?.maxHealth ?? 1
+      gameState.damageEnemy(row, col, Number.MAX_SAFE_INTEGER)
+      showDamageIndicator(row, col, 0, maxHp)
+      triggerHaptic('attack')
+      return 'action'
+    }
+    if (cell.entity === 'collectible') {
+      playState.setCell(row, col, { entity: null })
+      showDamageIndicator(row, col, 0, 1)
+      triggerHaptic('attack')
+      return 'action'
+    }
+    return false
+  }
+
   function onCellClick(row, col) {
     if (!gameActive || gameState.getTurn() !== 'player') return
     const playerPos = gameState.getPlayerPosition()
@@ -1169,7 +1286,10 @@ export function renderPlay(navigate) {
       const canReachTarget = targets.some((target) => target.row === row && target.col === col)
       if (!canReachTarget) return
       if (!gameState.spendPoints(activeCard.cost)) return
-      const actionResult = executeActionCardMove(row, col, cell, playerPos)
+      const actionResult =
+        activeCard.id === 'longbow'
+          ? executeLongbowAction(row, col, cell, playerPos)
+          : executeActionCardMove(row, col, cell, playerPos)
       if (!actionResult) return
       consumeActiveActionCard()
       updateUI()

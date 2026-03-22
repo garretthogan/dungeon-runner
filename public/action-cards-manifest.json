@@ -41,6 +41,12 @@
       "name": "Extra Roll",
       "icon": "",
       "cost": 3
+    },
+    {
+      "id": "longbow",
+      "name": "Longbow",
+      "icon": "bow-icon.svg",
+      "cost": 4
     }
   ]
 }
