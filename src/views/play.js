@@ -143,7 +143,6 @@ export function renderPlay(navigate) {
       <div class="play-header-spacer"></div>
       <h1 class="play-title">
         <img src="${baseUrl}DR-Logo.png" alt="Dungeon Runner" class="app-logo" />
-        <span class="play-puzzle-counter" id="play-puzzle-counter" aria-label="Current puzzle">Puzzle 1</span>
       </h1>
       <div class="play-settings-wrap">
         <button type="button" class="play-gear" aria-label="Settings" aria-expanded="false" aria-haspopup="menu" id="play-gear"><img src="${baseUrl}settings-icon.png" alt="" class="play-gear-icon" aria-hidden="true" /></button>
@@ -156,6 +155,7 @@ export function renderPlay(navigate) {
       <div class="play-stage-inner">
         <div class="canvas-wrap play-canvas-wrap">
           <canvas class="puzzle-canvas" id="play-canvas"></canvas>
+          <div class="play-puzzle-counter" id="play-puzzle-counter" aria-label="Current puzzle">Puzzle 1</div>
         </div>
         <div class="play-bottom-bar">
           <div class="play-dice-column">
@@ -222,8 +222,9 @@ export function renderPlay(navigate) {
   const canvas = grid.createCanvas()
   canvas.id = 'play-canvas'
   canvas.style.setProperty('--play-grid-aspect', `${GRID_COLS} / ${GRID_ROWS}`)
-  canvasWrap.innerHTML = ''
-  canvasWrap.appendChild(canvas)
+  const existingCanvas = canvasWrap.querySelector('canvas#play-canvas')
+  if (existingCanvas) existingCanvas.replaceWith(canvas)
+  else canvasWrap.prepend(canvas)
   const cardModalBackdrop = root.querySelector('#play-card-modal-backdrop')
   const cardChoiceList = root.querySelector('#play-card-choice-list')
   const actionSlotsWrap = root.querySelector('.play-actions')
