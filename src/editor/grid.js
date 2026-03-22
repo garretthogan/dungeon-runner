@@ -65,8 +65,25 @@ function drawMovementTile(ctx, x, y, size) {
 }
 
 function drawObstacle(ctx, x, y, size) {
+  let drawX = x
+  let drawY = y
+  let drawW = size
+  let drawH = size
+  // Slightly overdraw edge obstacles to avoid subpixel seams against
+  // the canvas border when scaled on some devices.
+  if (x === 0) {
+    drawX -= 1
+    drawW += 1
+  }
+  if (y === 0) {
+    drawY -= 1
+    drawH += 1
+  }
+  if (x + size === GRID_PIXEL_WIDTH) drawW += 1
+  if (y + size === GRID_PIXEL_HEIGHT) drawH += 1
+
   ctx.beginPath()
-  roundRect(ctx, x, y, size, size, CELL_RADIUS)
+  roundRect(ctx, drawX, drawY, drawW, drawH, CELL_RADIUS)
   ctx.fillStyle = COLORS.obstacle
   ctx.fill()
 }
@@ -196,6 +213,10 @@ export function render(canvas, state, options = {}) {
   const w = GRID_PIXEL_WIDTH
   const h = GRID_PIXEL_HEIGHT
   ctx.clearRect(0, 0, w, h)
+  // Paint a dark base so subpixel seams at edges/grid boundaries
+  // don't show up as light 1px insets when the canvas is scaled.
+  ctx.fillStyle = COLORS.obstacle
+  ctx.fillRect(0, 0, w, h)
 
   const highlightSet = options.highlightCells
     ? new Set(options.highlightCells.map((c) => `${c.row},${c.col}`))
