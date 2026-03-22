@@ -195,8 +195,7 @@ export function renderPlay(navigate) {
     <div class="play-game-over-backdrop" id="play-game-over-backdrop" hidden>
       <div class="play-game-over-modal" role="dialog" aria-modal="true" aria-labelledby="play-game-over-title">
         <img src="${baseUrl}GameOver.svg" alt="Game Over" class="play-game-over-image" />
-        <h2 class="play-game-over-title" id="play-game-over-title">Game Over</h2>
-        <p class="play-game-over-subtitle">You were defeated.</p>
+        <p class="play-game-over-subtitle">get good...</p>
         <button type="button" class="play-game-over-restart" id="play-game-over-restart">Restart</button>
       </div>
     </div>
