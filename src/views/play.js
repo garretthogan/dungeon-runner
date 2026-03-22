@@ -102,6 +102,30 @@ async function loadActionCardManifest() {
 }
 
 export function renderPlay(navigate) {
+  const GAME_OVER_SUBTITLES = [
+    'better luck next time chump',
+    'do better..get good..',
+    'fatality',
+    'maybe try not to die?',
+    'such a loser',
+    'you suck again',
+    'well well well.. not surprised',
+    'abc 123.. you suck',
+    'hahahaha',
+    'jajajaja',
+    'oops you, did it again',
+    'your soul is mine',
+    "this game isn't even that hard..",
+    'a.i. will take over the world',
+    "that's what you said",
+    'you snooze you lose',
+    "you lost loser mc'loser",
+    'dang those dots really got ya huh',
+    'please not again',
+    'please try and do better next time',
+    'sucks to suck buttercup',
+    'maybe one day..',
+  ]
   let gameActive = false
   let lastLevelData = null
   let endlessLevel = 1
@@ -235,6 +259,7 @@ export function renderPlay(navigate) {
   const cardModalBackdrop = root.querySelector('#play-card-modal-backdrop')
   const cardChoiceList = root.querySelector('#play-card-choice-list')
   const gameOverBackdrop = root.querySelector('#play-game-over-backdrop')
+  const gameOverSubtitleEl = root.querySelector('.play-game-over-subtitle')
   const actionSlotsWrap = root.querySelector('.play-actions')
 
   function initializeRandomActionCards() {
@@ -253,6 +278,10 @@ export function renderPlay(navigate) {
   }
 
   function showGameOverModal() {
+    if (gameOverSubtitleEl && GAME_OVER_SUBTITLES.length > 0) {
+      const subtitleIndex = Math.floor(Math.random() * GAME_OVER_SUBTITLES.length)
+      gameOverSubtitleEl.textContent = GAME_OVER_SUBTITLES[subtitleIndex]
+    }
     const gameOverLevelEl = root.querySelector('#play-game-over-level')
     if (gameOverLevelEl) {
       const reachedLevel = Math.max(1, completedPuzzles + 1)
