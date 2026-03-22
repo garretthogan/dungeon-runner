@@ -682,6 +682,17 @@ export function renderPlay(navigate) {
     return false
   }
 
+  function getObstacleTargetCount(levelNumber) {
+    const totalCells = GRID_ROWS * GRID_COLS
+    const clampedLevel = Math.max(1, levelNumber)
+    // Increase obstacle density as player progresses.
+    const targetDensity = Math.min(0.52, 0.09 + (clampedLevel - 1) * 0.015)
+    const minObstacles = 8
+    const maxObstacles = totalCells - 26
+    const desiredCount = Math.floor(totalCells * targetDensity)
+    return Math.max(minObstacles, Math.min(maxObstacles, desiredCount))
+  }
+
   function createEndlessLevel(levelNumber, sourceSeed) {
     for (let attempt = 0; attempt < 60; attempt++) {
       const randomFn = createSeededRandom(`${sourceSeed}:${levelNumber}:${attempt}`)
@@ -716,7 +727,7 @@ export function renderPlay(navigate) {
       }
 
       const reserved = new Set([cellKey(playerCell.row, playerCell.col), cellKey(exitCell.row, exitCell.col)])
-      const obstacleCount = Math.min(22, 8 + levelNumber)
+      const obstacleCount = getObstacleTargetCount(levelNumber)
       let placedObstacles = 0
       for (const c of shuffle(allCells, randomFn)) {
         const key = cellKey(c.row, c.col)
