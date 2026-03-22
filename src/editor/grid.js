@@ -20,6 +20,14 @@ const COLORS = {
   gridLine: '#06265F',
   moveHighlight: '#8EFDB0',
 }
+const ASSET_BASE_URL = import.meta.env.BASE_URL || '/'
+const EXIT_SVG_SRC = `${ASSET_BASE_URL}Exit.svg`
+const exitTileImage = new Image()
+let isExitTileImageReady = false
+exitTileImage.addEventListener('load', () => {
+  isExitTileImageReady = true
+})
+exitTileImage.src = EXIT_SVG_SRC
 
 export function createCanvas() {
   const canvas = document.createElement('canvas')
@@ -108,74 +116,28 @@ function drawEnemy(ctx, x, y, size) {
   ctx.fill()
 }
 
-function drawExit(ctx, x, y, size, showLabel = true) {
-  let x1 = 0
-  let y1 = 0
-  let x2 = 0
-  let y2 = 0
+function getExitRotation(x, y, size) {
+  if (y === 0) return 0
+  if (y + size === GRID_PIXEL_HEIGHT) return Math.PI
+  if (x === 0) return -Math.PI / 2
+  if (x + size === GRID_PIXEL_WIDTH) return Math.PI / 2
+  return 0
+}
 
-  // Exit cells are on the border; pick the boundary-facing edge segment.
-  if (y === 0) {
-    x1 = x
-    y1 = y + 1
-    x2 = x + size
-    y2 = y + 1
-  } else if (y + size === GRID_PIXEL_HEIGHT) {
-    x1 = x
-    y1 = y + size - 1
-    x2 = x + size
-    y2 = y + size - 1
-  } else if (x === 0) {
-    x1 = x + 1
-    y1 = y
-    x2 = x + 1
-    y2 = y + size
-  } else if (x + size === GRID_PIXEL_WIDTH) {
-    x1 = x + size - 1
-    y1 = y
-    x2 = x + size - 1
-    y2 = y + size
-  } else {
-    return
+function drawExit(ctx, x, y, size, showLabel = true) {
+  if (isExitTileImageReady) {
+    const rotation = getExitRotation(x, y, size)
+    if (rotation === 0) {
+      ctx.drawImage(exitTileImage, x, y, size, size)
+    } else {
+      ctx.save()
+      ctx.translate(x + size / 2, y + size / 2)
+      ctx.rotate(rotation)
+      ctx.drawImage(exitTileImage, -size / 2, -size / 2, size, size)
+      ctx.restore()
+    }
   }
 
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(x, y, size, size)
-  ctx.clip()
-  ctx.lineCap = 'butt'
-  ctx.strokeStyle = COLORS.exitBg
-
-  // Outer bloom.
-  ctx.globalAlpha = 0.65
-  ctx.lineWidth = 4
-  ctx.shadowColor = COLORS.exitBg
-  ctx.shadowBlur = 64
-  ctx.beginPath()
-  ctx.moveTo(x1, y1)
-  ctx.lineTo(x2, y2)
-  ctx.stroke()
-
-  // Mid glow layer.
-  ctx.globalAlpha = 0.85
-  ctx.lineWidth = 2
-  ctx.shadowBlur = 32
-  ctx.beginPath()
-  ctx.moveTo(x1, y1)
-  ctx.lineTo(x2, y2)
-  ctx.stroke()
-
-  // Solid emissive core.
-  ctx.globalAlpha = .5
-  ctx.lineWidth = 1
-  ctx.shadowBlur = 1
-  ctx.beginPath()
-  ctx.moveTo(x1, y1)
-  ctx.lineTo(x2, y2)
-  ctx.stroke()
-  ctx.globalAlpha = 1
-  ctx.shadowBlur = 0
-  ctx.shadowColor = 'transparent'
   if (showLabel) {
     ctx.fillStyle = COLORS.exitText
     ctx.font = '700 12px system-ui, sans-serif'
@@ -183,7 +145,6 @@ function drawExit(ctx, x, y, size, showLabel = true) {
     ctx.textBaseline = 'middle'
     ctx.fillText('Exit', x + size / 2, y + size / 2)
   }
-  ctx.restore()
 }
 
 function drawCollectible(ctx, x, y, size) {
