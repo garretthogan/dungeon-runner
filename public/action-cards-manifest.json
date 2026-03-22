@@ -32,7 +32,7 @@
     },
     {
       "id": "shockwave",
-      "name": "Shock",
+      "name": "Shock Wave",
       "icon": "energy-icon.svg",
       "cost": 3
     },
@@ -44,7 +44,7 @@
     },
     {
       "id": "longbow",
-      "name": "Longbow",
+      "name": "Long Bow",
       "icon": "bow-icon.svg",
       "cost": 4
     }

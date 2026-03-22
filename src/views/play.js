@@ -471,11 +471,18 @@ export function renderPlay(navigate) {
 
   function consumeCardAtIndex(slotIdx) {
     if (slotIdx < 0 || slotIdx >= selectedActionCards.length) return
-    selectedActionCards.splice(slotIdx, 1)
+    const consumedCard = selectedActionCards[slotIdx]
+    const replacementPool = actionCardOptions.filter((card) => card?.id && card.id !== consumedCard?.id)
+    const fallbackPool = actionCardOptions.filter((card) => card?.id)
+    const pickFrom = replacementPool.length > 0 ? replacementPool : fallbackPool
+    if (pickFrom.length > 0) {
+      const picked = pickFrom[randomInt(0, pickFrom.length - 1)]
+      selectedActionCards[slotIdx] = { ...picked }
+    } else {
+      selectedActionCards.splice(slotIdx, 1)
+    }
     if (activeActionCardIndex === slotIdx) {
       activeActionCardIndex = -1
-    } else if (activeActionCardIndex > slotIdx) {
-      activeActionCardIndex -= 1
     }
     renderActionSlots()
   }
