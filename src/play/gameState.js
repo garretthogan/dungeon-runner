@@ -14,6 +14,9 @@ let playerHealth = DEFAULT_PLAYER_HP
 let playerMaxHealth = DEFAULT_PLAYER_MAX_HP
 let enemies = []
 let frozenOpponentTurns = 0
+let shieldOnNextPlayerMove = false
+let shieldBlocks = 0
+let pawnRestrictedOpponentTurns = 0
 let moveEvents = []
 
 export function getTurn() {
@@ -67,6 +70,9 @@ export function initFromGrid(grid) {
   playerMaxHealth = DEFAULT_PLAYER_MAX_HP
   enemies = []
   frozenOpponentTurns = 0
+  shieldOnNextPlayerMove = false
+  shieldBlocks = 0
+  pawnRestrictedOpponentTurns = 0
   moveEvents = []
   const playerPos = playState.findEntity('player')
   if (!playerPos) return false
@@ -97,9 +103,37 @@ export function freezeOpponentsForTurns(turnCount) {
   frozenOpponentTurns = Math.max(frozenOpponentTurns, turnCount)
 }
 
+export function activateShieldOnNextMove() {
+  shieldOnNextPlayerMove = true
+}
+
+export function consumePendingShieldForPlayerMove() {
+  if (!shieldOnNextPlayerMove) return false
+  shieldOnNextPlayerMove = false
+  shieldBlocks = 1
+  return true
+}
+
+export function consumeShieldBlock() {
+  if (shieldBlocks <= 0) return false
+  shieldBlocks -= 1
+  return true
+}
+
 export function consumeOpponentFrozenTurn() {
   if (frozenOpponentTurns <= 0) return false
   frozenOpponentTurns -= 1
+  return true
+}
+
+export function restrictOpponentsToPawnMoveForTurns(turnCount) {
+  if (turnCount <= 0) return
+  pawnRestrictedOpponentTurns = Math.max(pawnRestrictedOpponentTurns, turnCount)
+}
+
+export function consumeOpponentPawnMoveTurn() {
+  if (pawnRestrictedOpponentTurns <= 0) return false
+  pawnRestrictedOpponentTurns -= 1
   return true
 }
 

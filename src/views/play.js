@@ -495,7 +495,16 @@ export function renderPlay(navigate) {
 
   function castInstantCard(slotIdx) {
     const card = selectedActionCards[slotIdx]
-    if (!card || (card.id !== 'freeze' && card.id !== 'renew' && card.id !== 'shockwave' && card.id !== 'extraroll')) return false
+    if (
+      !card ||
+      (card.id !== 'freeze' &&
+        card.id !== 'renew' &&
+        card.id !== 'shockwave' &&
+        card.id !== 'extraroll' &&
+        card.id !== 'shield' &&
+        card.id !== 'pawn' &&
+        card.id !== 'sword-slash')
+    ) return false
     if (!hasEnoughEnergyForCard(card)) return false
     if (!gameState.spendPoints(card.cost)) return false
     if (card.id === 'freeze') {
@@ -506,6 +515,12 @@ export function renderPlay(navigate) {
       applyShockwaveFromPlayer()
     } else if (card.id === 'extraroll') {
       gameState.addExtraRoll()
+    } else if (card.id === 'shield') {
+      gameState.activateShieldOnNextMove()
+    } else if (card.id === 'pawn') {
+      gameState.restrictOpponentsToPawnMoveForTurns(1)
+    } else if (card.id === 'sword-slash') {
+      applySwordSlashFromPlayer()
     }
     consumeCardAtIndex(slotIdx)
     startMoveAnimationsFromGameState()
@@ -532,6 +547,35 @@ export function renderPlay(navigate) {
     for (const unit of units) {
       pushUnitAwayFromPlayer(unit, playerPos)
     }
+  }
+
+  function applySwordSlashFromPlayer() {
+    const playerPos = gameState.getPlayerPosition()
+    if (!playerPos) return
+    const state = playState.getState()
+    const offsets = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ]
+    for (const [dr, dc] of offsets) {
+      const row = playerPos.row + dr
+      const col = playerPos.col + dc
+      if (row < 0 || row >= GRID_ROWS || col < 0 || col >= GRID_COLS) continue
+      const entity = state[row]?.[col]?.entity
+      if (!isAttackableEntity(entity)) continue
+      if (entity === 'enemy') {
+        const enemy = gameState.getEnemies().find((e) => e.row === row && e.col === col)
+        const maxHp = enemy?.maxHealth ?? 1
+        gameState.damageEnemy(row, col, Number.MAX_SAFE_INTEGER)
+        showDamageIndicator(row, col, 0, maxHp)
+      } else {
+        playState.setCell(row, col, { entity: null })
+        showDamageIndicator(row, col, 0, 1)
+      }
+    }
+    triggerHaptic('attack')
   }
 
   function pushUnitAwayFromPlayer(unit, playerPos) {
@@ -561,7 +605,15 @@ export function renderPlay(navigate) {
   function activateCard(slotIdx) {
     const card = selectedActionCards[slotIdx]
     if (!card || !gameActive || gameState.getTurn() !== 'player') return
-    if (card.id === 'freeze' || card.id === 'renew' || card.id === 'shockwave' || card.id === 'extraroll') {
+    if (
+      card.id === 'freeze' ||
+      card.id === 'renew' ||
+      card.id === 'shockwave' ||
+      card.id === 'extraroll' ||
+      card.id === 'shield' ||
+      card.id === 'pawn' ||
+      card.id === 'sword-slash'
+    ) {
       castInstantCard(slotIdx)
       return
     }
@@ -1230,6 +1282,7 @@ export function renderPlay(navigate) {
       const maxHp = enemy?.maxHealth ?? 1
       gameState.damageEnemy(row, col, Number.MAX_SAFE_INTEGER)
       gameState.movePlayer(playerPos.row, playerPos.col, row, col)
+      gameState.consumePendingShieldForPlayerMove()
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
       showDamageIndicator(row, col, 0, maxHp)
@@ -1239,6 +1292,7 @@ export function renderPlay(navigate) {
     if (cell.entity === 'collectible') {
       playState.setCell(row, col, { entity: null })
       gameState.movePlayer(playerPos.row, playerPos.col, row, col)
+      gameState.consumePendingShieldForPlayerMove()
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
       showDamageIndicator(row, col, 0, 1)
@@ -1247,6 +1301,7 @@ export function renderPlay(navigate) {
     }
     if (cell.entity === 'exit') {
       gameState.movePlayer(playerPos.row, playerPos.col, row, col)
+      gameState.consumePendingShieldForPlayerMove()
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
       triggerHaptic('move')
@@ -1254,6 +1309,7 @@ export function renderPlay(navigate) {
     }
     if (cell.entity == null) {
       gameState.movePlayer(playerPos.row, playerPos.col, row, col)
+      gameState.consumePendingShieldForPlayerMove()
       startMoveAnimationsFromGameState()
       hasPlayerMovedThisPuzzle = true
       triggerHaptic('move')
@@ -1355,6 +1411,7 @@ export function renderPlay(navigate) {
           const destCell = gridData[next.row]?.[next.col]
           const movedToExit = destCell?.entity === 'exit'
           gameState.movePlayer(playerPos.row, playerPos.col, next.row, next.col)
+          gameState.consumePendingShieldForPlayerMove()
           startMoveAnimationsFromGameState()
           hasPlayerMovedThisPuzzle = true
           triggerHaptic('move')

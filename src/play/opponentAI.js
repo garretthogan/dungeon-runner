@@ -15,6 +15,7 @@ export function runOpponentTurn() {
     gameState.endOpponentTurn()
     return
   }
+  const pawnMoveRestricted = gameState.consumeOpponentPawnMoveTurn()
 
   const grid = playState.getState()
 
@@ -36,11 +37,14 @@ export function runOpponentTurn() {
     if (grid[piece.row]?.[piece.col]?.entity !== piece.entity) continue
 
     if (gameState.isAdjacent(piece.row, piece.col, playerPos.row, playerPos.col)) {
+      if (gameState.consumeShieldBlock()) continue
       gameState.damagePlayer(1)
       continue
     }
 
-    if (piece.entity === 'enemy') {
+    if (pawnMoveRestricted) {
+      moveEnemyAsPawn(piece.row, piece.col, piece.entity, playerPos.row, playerPos.col)
+    } else if (piece.entity === 'enemy') {
       moveRedEnemy(piece.row, piece.col, playerPos.row, playerPos.col)
     } else {
       movePurpleEnemy(piece.row, piece.col, playerPos.row, playerPos.col)
@@ -99,6 +103,32 @@ function movePurpleEnemy(fromRow, fromCol, playerRow, playerCol) {
   const bestScore = scoreTileForEnemy(best.row, best.col, playerRow, playerCol)
   if (bestScore <= currentScore) return
   gameState.moveCollectible(fromRow, fromCol, best.row, best.col)
+}
+
+function moveEnemyAsPawn(fromRow, fromCol, entity, playerRow, playerCol) {
+  const orthogonalDirs = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ]
+  const candidates = []
+  for (const [dr, dc] of orthogonalDirs) {
+    const toRow = fromRow + dr
+    const toCol = fromCol + dc
+    if (!isOpenMovementCell(toRow, toCol)) continue
+    candidates.push({ row: toRow, col: toCol })
+  }
+  const best = pickHighestScoringTile(candidates, playerRow, playerCol)
+  if (!best) return
+  const currentScore = scoreTileForEnemy(fromRow, fromCol, playerRow, playerCol)
+  const bestScore = scoreTileForEnemy(best.row, best.col, playerRow, playerCol)
+  if (bestScore <= currentScore) return
+  if (entity === 'enemy') {
+    gameState.moveEnemy(fromRow, fromCol, best.row, best.col)
+  } else {
+    gameState.moveCollectible(fromRow, fromCol, best.row, best.col)
+  }
 }
 
 function pickHighestScoringTile(candidates, playerRow, playerCol) {

@@ -47,6 +47,24 @@
       "name": "Long Bow",
       "icon": "bow-icon.svg",
       "cost": 4
+    },
+    {
+      "id": "sword-slash",
+      "name": "Slash",
+      "icon": "sword-slash.svg",
+      "cost": 2
+    },
+    {
+      "id": "shield",
+      "name": "Shield",
+      "icon": "shield.svg",
+      "cost": 2
+    },
+    {
+      "id": "pawn",
+      "name": "Pawn",
+      "icon": "pawn.svg",
+      "cost": 2
     }
   ]
 }

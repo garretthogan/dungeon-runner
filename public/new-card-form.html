@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Action Card</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2rem;
+        max-width: 560px;
+      }
+      form {
+        display: grid;
+        gap: 0.9rem;
+      }
+      label {
+        display: grid;
+        gap: 0.35rem;
+      }
+      input,
+      button {
+        font-size: 1rem;
+        padding: 0.45rem;
+      }
+      #status {
+        margin-top: 1rem;
+        min-height: 1.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Create New Card</h1>
+    <form id="new-card-form">
+      <label for="id">
+        Card ID
+        <input id="id" name="id" required pattern="[a-z0-9-]+" />
+      </label>
+
+      <label for="name">
+        Name
+        <input id="name" name="name" required />
+      </label>
+
+      <label for="cost">
+        Cost
+        <input id="cost" name="cost" type="number" min="0" required />
+      </label>
+
+      <label for="icon">
+        Icon (SVG or PNG)
+        <input id="icon" name="icon" type="file" accept=".svg,.png,image/svg+xml,image/png" required />
+      </label>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <p id="status" aria-live="polite"></p>
+
+    <script>
+      const form = document.getElementById("new-card-form");
+      const statusEl = document.getElementById("status");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        statusEl.textContent = "Saving...";
+
+        const formData = new FormData(form);
+        const iconFile = formData.get("icon");
+        if (!(iconFile instanceof File) || iconFile.size === 0) {
+          statusEl.textContent = "Please choose a valid icon file.";
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/cards", {
+            method: "POST",
+            body: formData,
+          });
+
+          const payload = await response.json().catch(() => ({ error: "Unknown server response." }));
+          if (!response.ok) {
+            statusEl.textContent = payload.error || "Failed to create card.";
+            return;
+          }
+
+          statusEl.textContent = payload.message || "Card created.";
+          form.reset();
+        } catch (_error) {
+          statusEl.textContent = "Request failed. Is the server running?";
+        }
+      });
+    </script>
+  </body>
+</html>

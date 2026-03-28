@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "card-form": "node scripts/new-card-form-server.mjs"
   },
   "devDependencies": {
     "vite": "^7.3.1"
