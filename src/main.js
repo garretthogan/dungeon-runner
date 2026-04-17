@@ -1,6 +1,38 @@
 import './style.css'
 import { initRouter } from './router.js'
 
+function detectWebShell() {
+  const ua = navigator.userAgent || ''
+  const standalone = navigator.standalone === true
+  const displayModeStandalone =
+    typeof window.matchMedia === 'function' &&
+    (window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches)
+  const androidWebView = / wv\)/.test(ua)
+  const iosWebKitBridge = !!(window.webkit && window.webkit.messageHandlers)
+  const androidJSBridge =
+    typeof window.AndroidInterface !== 'undefined' ||
+    typeof window.Android !== 'undefined'
+  const isIOS = /iPhone|iPad|iPod/.test(ua)
+  const iosInAppBrowser =
+    isIOS && !/Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)
+
+  return (
+    standalone ||
+    displayModeStandalone ||
+    androidWebView ||
+    iosWebKitBridge ||
+    androidJSBridge ||
+    iosInAppBrowser
+  )
+}
+
+function applyShellClass() {
+  document.documentElement.classList.add(
+    detectWebShell() ? 'is-webshell' : 'is-browser'
+  )
+}
+
 function installMobileZoomGuard() {
   let lastTouchEnd = 0
 
@@ -31,5 +63,6 @@ function installMobileZoomGuard() {
   )
 }
 
+applyShellClass()
 installMobileZoomGuard()
 initRouter()
